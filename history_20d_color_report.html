@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>VCP 選股 多維度走勢追蹤戰情室</title>
+<title>VCP 選股 走勢追蹤戰情室</title>
 <style>
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body {
@@ -11,181 +11,160 @@
         background: #090e1f;
         color: #f1f5f9;
         margin: 0;
-        padding: 12px;
+        padding: 8px 10px;
     }
     
-    .header-area { margin-bottom: 12px; }
-    h1 { margin: 0 0 4px 0; font-size: 18px; font-weight: 800; display: flex; align-items: center; gap: 6px; }
-    .sub { color: #94a3b8; font-size: 11px; line-height: 1.4; }
-
-    /* 🏆 全歷史戰情看板卡片 */
-    .overall-dashboard {
-        background: #111a33;
-        border: 1px solid #1e293b;
-        border-radius: 10px;
-        padding: 12px;
-        margin-bottom: 14px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    }
-    .overall-header {
+    .header-area {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        font-size: 13px;
-        font-weight: 800;
-        color: #38bdf8;
-        margin-bottom: 10px;
-        border-bottom: 1px solid #1e293b;
-        padding-bottom: 6px;
+        margin-bottom: 6px;
     }
-    .overall-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 8px;
-    }
-    .strategy-card {
-        background: #172347;
-        border: 1px solid #283764;
-        border-radius: 8px;
-        padding: 8px 6px;
-        text-align: center;
+    h1 { margin: 0; font-size: 15px; font-weight: 800; display: flex; align-items: center; gap: 4px; }
+    .legend-tag { font-size: 10px; color: #94a3b8; }
+
+    /* 📱 緊湊型全歷史總結條（橫向滑動或小卡片） */
+    .overall-compact {
         display: flex;
-        flex-direction: column;
-        gap: 3px;
+        gap: 6px;
+        overflow-x: auto;
+        scrollbar-width: none;
+        margin-bottom: 8px;
     }
-    .strat-title { font-size: 12px; font-weight: 800; }
-    .strat-breakout { color: #f87171; }
-    .strat-ready { color: #38bdf8; }
-    .strat-leaders { color: #fbbf24; }
-    .strat-val-row { font-size: 11px; color: #94a3b8; display: flex; justify-content: space-around; }
-    .strat-main-metric { font-size: 13px; font-weight: 900; }
+    .overall-compact::-webkit-scrollbar { display: none; }
     
-    .filter-bar {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        margin-bottom: 12px;
+    .mini-strat-card {
         background: #111a33;
-        padding: 12px;
-        border-radius: 10px;
         border: 1px solid #1e293b;
+        border-radius: 6px;
+        padding: 5px 8px;
+        flex: 1;
+        min-width: 105px;
+        white-space: nowrap;
     }
-    
-    .filter-row {
+    .mini-strat-title { font-size: 10px; font-weight: 700; color: #94a3b8; margin-bottom: 1px; }
+    .mini-strat-val { font-size: 13px; font-weight: 800; }
+    .mini-strat-sub { font-size: 9px; color: #64748b; }
+
+    /* 控制列整併 */
+    .controls-wrapper {
+        background: #111a33;
+        border: 1px solid #1e293b;
+        border-radius: 8px;
+        padding: 6px 8px;
+        margin-bottom: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+    .ctrl-row {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 6px;
         overflow-x: auto;
-        padding-bottom: 2px;
-        white-space: nowrap;
         scrollbar-width: none;
+        white-space: nowrap;
     }
-    .filter-row::-webkit-scrollbar { display: none; }
-
-    .filter-label { font-size: 13px; font-weight: 700; color: #cbd5e1; flex-shrink: 0; }
+    .ctrl-row::-webkit-scrollbar { display: none; }
     
     .date-select {
         background: #1e293b;
         color: #38bdf8;
         border: 1px solid #3b82f6;
-        padding: 7px 12px;
-        border-radius: 8px;
-        font-size: 13px;
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 12px;
         font-weight: bold;
-        cursor: pointer;
         outline: none;
-        flex-shrink: 0;
     }
 
-    .opt-btn {
+    .pill-btn {
         background: #1e293b;
         border: 1px solid #334155;
         color: #94a3b8;
-        padding: 7px 14px;
-        border-radius: 8px;
+        padding: 4px 10px;
+        border-radius: 6px;
         cursor: pointer;
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 700;
-        transition: all 0.2s;
-        flex-shrink: 0;
+        transition: all 0.15s;
     }
-    .opt-btn.active-days { background: #8b5cf6 !important; border-color: #a78bfa !important; color: #fff !important; box-shadow: 0 0 10px rgba(139,92,246,0.5); }
-    .opt-btn.active-grade { background: #0284c7; color: #fff; border-color: #38bdf8; }
-    .opt-btn.active-a { background: #16a34a !important; border-color: #4ade80 !important; color: #fff !important; }
-    .opt-btn.active-b { background: #2563eb !important; border-color: #60a5fa !important; color: #fff !important; }
-    .opt-btn.active-c { background: #d97706 !important; border-color: #fbbf24 !important; color: #fff !important; }
+    .pill-btn.active-days { background: #7c3aed !important; border-color: #8b5cf6 !important; color: #fff !important; }
+    .pill-btn.active-grade { background: #0284c7; color: #fff; border-color: #38bdf8; }
+    .pill-btn.active-a { background: #16a34a !important; border-color: #22c55e !important; color: #fff !important; }
+    .pill-btn.active-b { background: #2563eb !important; border-color: #3b82f6 !important; color: #fff !important; }
+    .pill-btn.active-c { background: #d97706 !important; border-color: #f59e0b !important; color: #fff !important; }
 
-    .tabs-row {
+    /* 分類標籤頁與當日數據融合 */
+    .tabs-wrapper {
         display: flex;
-        gap: 8px;
-        margin-bottom: 12px;
+        align-items: center;
+        justify-content: space-between;
+        gap: 6px;
+        margin-bottom: 4px;
         overflow-x: auto;
-        padding-bottom: 4px;
         scrollbar-width: none;
     }
-    .tabs-row::-webkit-scrollbar { display: none; }
-
-    .tab-btn {
+    .tabs-wrapper::-webkit-scrollbar { display: none; }
+    .tab-pills { display: flex; gap: 4px; }
+    
+    .tab-pill {
         background: #111a33;
         color: #94a3b8;
         border: 1px solid #1e293b;
-        padding: 9px 16px;
-        border-radius: 8px;
+        padding: 5px 10px;
+        border-radius: 6px;
         cursor: pointer;
-        font-size: 13px;
+        font-size: 11px;
         font-weight: 700;
         white-space: nowrap;
-        flex-shrink: 0;
-        transition: all 0.2s;
     }
-    .tab-btn.active {
+    .tab-pill.active {
         background: #2563eb;
         color: #fff;
         border-color: #3b82f6;
-        box-shadow: 0 0 12px rgba(37,99,235,0.5);
     }
     
-    .stat-banner {
-        background: #111a33;
-        border-left: 4px solid #3b82f6;
-        padding: 10px 12px;
-        border-radius: 8px;
-        margin-bottom: 10px;
-        font-size: 12px;
-        color: #e2e8f0;
-        line-height: 1.5;
+    .day-summary-inline {
+        font-size: 11px;
+        color: #cbd5e1;
+        white-space: nowrap;
+        padding: 0 4px;
     }
-    
-    .scroll-hint {
+    .day-summary-inline b { color: #38bdf8; }
+
+    .table-hint-row {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        font-size: 11px;
-        color: #38bdf8;
-        margin-bottom: 6px;
-        font-weight: bold;
+        font-size: 10px;
+        color: #64748b;
+        margin-bottom: 4px;
+        padding: 0 2px;
     }
+    .table-hint-row .clickable-hint { color: #38bdf8; font-weight: bold; cursor: pointer; }
 
+    /* 表格本體 */
     .table-wrapper {
         width: 100%;
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
         background: #111a33;
-        border-radius: 10px;
+        border-radius: 8px;
         border: 1px solid #1e293b;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-        margin-bottom: 25px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+        margin-bottom: 20px;
     }
 
     table {
         border-collapse: separate;
         border-spacing: 0;
         width: 100%;
-        font-size: 13px;
+        font-size: 12px;
     }
 
     th, td {
-        padding: 8px 6px;
+        padding: 6px 5px;
         text-align: center;
         border-bottom: 1px solid #1e293b;
         border-right: 1px solid #1e293b;
@@ -195,7 +174,7 @@
     th {
         background: #090e1f;
         color: #94a3b8;
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 700;
         position: sticky;
         top: 0;
@@ -205,11 +184,6 @@
     th.sortable {
         cursor: pointer;
         user-select: none;
-        background: #172554 !important;
-        color: #60a5fa !important;
-        transition: background 0.2s;
-    }
-    th.sortable:hover {
         background: #1e3a8a !important;
         color: #93c5fd !important;
     }
@@ -219,8 +193,8 @@
         left: 0px;
         background: #111a33 !important;
         z-index: 5;
-        min-width: 90px;
-        box-shadow: 2px 0 6px rgba(0,0,0,0.35);
+        min-width: 82px;
+        box-shadow: 2px 0 5px rgba(0,0,0,0.35);
     }
     th.sticky-stock { background: #090e1f !important; z-index: 15; }
 
@@ -228,120 +202,100 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 2px;
+        gap: 1px;
     }
-    .stock-id-txt { font-size: 14px; font-weight: 800; color: #f8fafc; }
-    .stock-name-txt { font-size: 12px; color: #94a3b8; }
+    .stock-id-txt { font-size: 13px; font-weight: 800; color: #f8fafc; }
+    .stock-name-txt { font-size: 11px; color: #94a3b8; }
 
-    .badge-grade { display: inline-block; width: 20px; height: 20px; line-height: 20px; text-align: center; border-radius: 4px; font-weight: 900; font-size: 11px; color: #fff; }
+    .badge-grade { display: inline-block; width: 18px; height: 18px; line-height: 18px; text-align: center; border-radius: 4px; font-weight: 800; font-size: 10px; color: #fff; }
     .badge-grade-a { background: #16a34a; }
     .badge-grade-b { background: #2563eb; }
     .badge-grade-c { background: #d97706; }
-    .badge-tag { display: inline-block; padding: 2px 5px; border-radius: 4px; font-size: 10px; background: #1e293b; color: #38bdf8; font-weight: bold; }
+    .badge-tag { display: inline-block; padding: 2px 4px; border-radius: 4px; font-size: 9px; background: #1e293b; color: #38bdf8; font-weight: bold; }
 
-    .cell-box { display: flex; flex-direction: column; gap: 2px; align-items: center; min-width: 60px; }
-    .date-label { font-size: 9px; color: #64748b; }
-    .close-price { font-size: 12px; font-weight: bold; color: #f1f5f9; }
-    .day-val { font-size: 11px; font-weight: bold; padding: 1px 3px; border-radius: 4px; }
-    .cum-box { font-size: 10px; padding: 1px 4px; border-radius: 4px; }
+    .cell-box { display: flex; flex-direction: column; gap: 1px; align-items: center; min-width: 52px; }
+    .date-label { font-size: 8px; color: #64748b; }
+    .close-price { font-size: 11px; font-weight: 700; color: #f1f5f9; }
+    .day-val { font-size: 10px; font-weight: 700; padding: 0 2px; border-radius: 3px; }
+    .cum-box { font-size: 9px; padding: 0 3px; border-radius: 3px; }
     
     .c-red { color: #f87171; }
     .c-green { color: #4ade80; }
     .c-gray { color: #64748b; }
-    .limit-up { background: #ffffff !important; color: #dc2626 !important; font-weight: 900 !important; border-radius: 3px; box-shadow: 0 0 8px rgba(255, 255, 255, 0.9); padding: 1px 4px !important; }
+    .limit-up { background: #ffffff !important; color: #dc2626 !important; font-weight: 900 !important; border-radius: 3px; padding: 0 3px !important; }
     .bg-red { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
     .bg-green { background: rgba(34, 197, 94, 0.2); color: #86efac; }
     .bg-gray { background: #1e293b; color: #64748b; }
     
-    .break-stop { color: #f59e0b; font-weight: bold; font-size: 11px; }
-    .no-break { color: #10b981; font-size: 11px; }
-    .stop-loss-val { color: #f87171; font-weight: bold; }
+    .break-stop { color: #f59e0b; font-weight: bold; font-size: 10px; }
+    .no-break { color: #10b981; font-size: 10px; }
+    .stop-loss-val { color: #f87171; font-weight: 700; font-size: 11px; }
     
     .ret-highlight {
         font-weight: 800;
-        font-size: 13px;
+        font-size: 12px;
         background: rgba(15, 23, 42, 0.45);
-        min-width: 75px;
+        min-width: 65px;
     }
 </style>
 </head>
 <body>
 
 <div class="header-area">
-    <h1>📈 VCP 選股：走勢追蹤戰情室</h1>
-    <div class="sub">格內資訊：<b>[收盤價] &rarr; [單日漲跌%]</b>（<span class="limit-up" style="font-size:10px;">白底亮燈</span>代表漲停）&rarr; <b>[下方色塊：累計%]</b></div>
+    <h1>📈 VCP 走勢戰情室</h1>
+    <div class="legend-tag"><span class="limit-up" style="font-size:9px;">白底</span>=漲停 | 自 09/01 累計</div>
 </div>
 
-<!-- 🏆 全歷史戰情看板 -->
-<div class="overall-dashboard">
-    <div class="overall-header">
-        <span>🏆 各策略「從頭至今」全歷史總成績 (自 09/01 至今)</span>
-        <span id="overallCycleTxt" style="font-size:11px; color:#cbd5e1;">週期: 20 天</span>
+<!-- 📱 緊湊型全歷史統計列 -->
+<div class="overall-compact">
+    <div class="mini-strat-card">
+        <div class="mini-strat-title">🚀 突破 (BREAKOUT)</div>
+        <div class="mini-strat-val" id="card-breakout-ret">--</div>
+        <div class="mini-strat-sub">勝率 <b id="card-breakout-wr">--</b> | <span id="card-breakout-cnt">--</span></div>
     </div>
-    <div class="overall-grid">
-        <div class="strategy-card">
-            <span class="strat-title strat-breakout">🚀 突破 (BREAKOUT)</span>
-            <span class="strat-main-metric" id="card-breakout-ret">--</span>
-            <div class="strat-val-row">
-                <span>勝率 <b id="card-breakout-wr">--</b></span>
-                <span>樣本 <b id="card-breakout-cnt">--</b></span>
-            </div>
-        </div>
-        <div class="strategy-card">
-            <span class="strat-title strat-ready">⏳ 蓄勢 (READY)</span>
-            <span class="strat-main-metric" id="card-ready-ret">--</span>
-            <div class="strat-val-row">
-                <span>勝率 <b id="card-ready-wr">--</b></span>
-                <span>樣本 <b id="card-ready-cnt">--</b></span>
-            </div>
-        </div>
-        <div class="strategy-card">
-            <span class="strat-title strat-leaders">👑 領頭 (LEADERS)</span>
-            <span class="strat-main-metric" id="card-leaders-ret">--</span>
-            <div class="strat-val-row">
-                <span>勝率 <b id="card-leaders-wr">--</b></span>
-                <span>樣本 <b id="card-leaders-cnt">--</b></span>
-            </div>
-        </div>
+    <div class="mini-strat-card">
+        <div class="mini-strat-title">⏳ 蓄勢 (READY)</div>
+        <div class="mini-strat-val" id="card-ready-ret">--</div>
+        <div class="mini-strat-sub">勝率 <b id="card-ready-wr">--</b> | <span id="card-ready-cnt">--</span></div>
+    </div>
+    <div class="mini-strat-card">
+        <div class="mini-strat-title">👑 領頭 (LEADERS)</div>
+        <div class="mini-strat-val" id="card-leaders-ret">--</div>
+        <div class="mini-strat-sub">勝率 <b id="card-leaders-wr">--</b> | <span id="card-leaders-cnt">--</span></div>
     </div>
 </div>
 
-<div class="filter-bar">
-    <div class="filter-row">
-        <span class="filter-label">🗓️ 月份：</span>
+<!-- 📱 整併控制列（兩排精巧橫列） -->
+<div class="controls-wrapper">
+    <div class="ctrl-row">
         <select id="monthSelector" class="date-select" onchange="onMonthChange()"></select>
-        <span class="filter-label" style="margin-left: 8px;">📅 日期：</span>
         <select id="daySelector" class="date-select" onchange="applyFilters()"></select>
+        <button class="pill-btn" id="btn-days-7" onclick="setHoldingDays(7)">7天</button>
+        <button class="pill-btn active-days" id="btn-days-20" onclick="setHoldingDays(20)">20天</button>
+        <button class="pill-btn" id="btn-days-30" onclick="setHoldingDays(30)">30天</button>
     </div>
-
-    <div class="filter-row">
-        <span class="filter-label">⏱️ 天數：</span>
-        <button class="opt-btn" id="btn-days-7" onclick="setHoldingDays(7)">⚡ 7 天</button>
-        <button class="opt-btn active-days" id="btn-days-20" onclick="setHoldingDays(20)">📊 20 天</button>
-        <button class="opt-btn" id="btn-days-30" onclick="setHoldingDays(30)">📈 30 天</button>
-    </div>
-
-    <div class="filter-row">
-        <span class="filter-label">🎯 評分：</span>
-        <button class="opt-btn active-grade" id="btn-grade-ALL" onclick="setGradeFilter('ALL')">全部</button>
-        <button class="opt-btn" id="btn-grade-A" onclick="setGradeFilter('A')">🏆 A 級</button>
-        <button class="opt-btn" id="btn-grade-B" onclick="setGradeFilter('B')">⭐ B 級</button>
-        <button class="opt-btn" id="btn-grade-C" onclick="setGradeFilter('C')">🔹 C 級</button>
+    <div class="ctrl-row">
+        <button class="pill-btn active-grade" id="btn-grade-ALL" onclick="setGradeFilter('ALL')">全部評分</button>
+        <button class="pill-btn" id="btn-grade-A" onclick="setGradeFilter('A')">🏆 A級</button>
+        <button class="pill-btn" id="btn-grade-B" onclick="setGradeFilter('B')">⭐ B級</button>
+        <button class="pill-btn" id="btn-grade-C" onclick="setGradeFilter('C')">🔹 C級</button>
     </div>
 </div>
 
-<div class="tabs-row">
-    <button class="tab-btn active" id="tab-btn-ALL" onclick="switchCategory('ALL')">全部 (<span id="count-ALL">0</span>)</button>
-    <button class="tab-btn" id="tab-btn-BREAKOUT" onclick="switchCategory('BREAKOUT')">🚀 突破 (<span id="count-BREAKOUT">0</span>)</button>
-    <button class="tab-btn" id="tab-btn-READY" onclick="switchCategory('READY')">⏳ 蓄勢 (<span id="count-READY">0</span>)</button>
-    <button class="tab-btn" id="tab-btn-LEADERS" onclick="switchCategory('LEADERS')">👑 領頭 (<span id="count-LEADERS">0</span>)</button>
+<!-- 分類標籤頁與當日小統計整併 -->
+<div class="tabs-wrapper">
+    <div class="tab-pills">
+        <button class="tab-pill active" id="tab-btn-ALL" onclick="switchCategory('ALL')">全部 (<span id="count-ALL">0</span>)</button>
+        <button class="tab-pill" id="tab-btn-BREAKOUT" onclick="switchCategory('BREAKOUT')">突破 (<span id="count-BREAKOUT">0</span>)</button>
+        <button class="tab-pill" id="tab-btn-READY" onclick="switchCategory('READY')">蓄勢 (<span id="count-READY">0</span>)</button>
+        <button class="tab-pill" id="tab-btn-LEADERS" onclick="switchCategory('LEADERS')">領頭 (<span id="count-LEADERS">0</span>)</button>
+    </div>
+    <div class="day-summary-inline" id="dayInlineStat">勝率 -- | 報 --</div>
 </div>
 
-<div class="stat-banner" id="statBanner">載入中...</div>
-
-<div class="scroll-hint">
-    <span>💡 點擊「累計報酬」欄可排序</span>
-    <span>👉 右滑看更多天數</span>
+<div class="table-hint-row">
+    <span class="clickable-hint" onclick="toggleSort()">💡 點此切換累計報酬排序</span>
+    <span>👉 表格可向右滑動</span>
 </div>
 
 <div id="tableContainer"></div>
@@ -370,7 +324,7 @@ function initDatePickers() {
     Object.keys(monthMap).sort().reverse().forEach(m => {
         const opt = document.createElement('option');
         opt.value = m;
-        opt.innerText = m.replace('-', ' 年 ') + ' 月';
+        opt.innerText = m.replace('-', '/') + '月';
         monthSelector.appendChild(opt);
     });
 
@@ -387,7 +341,7 @@ function onMonthChange() {
     daysInMonth.forEach(d => {
         const opt = document.createElement('option');
         opt.value = d;
-        opt.innerText = d.substring(5) + ' 日';
+        opt.innerText = d.substring(5);
         daySelector.appendChild(opt);
     });
 
@@ -423,7 +377,7 @@ function setGradeFilter(grade) {
 
 function switchCategory(cat) {
     currentCategory = cat;
-    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.tab-pill').forEach(btn => btn.classList.remove('active'));
     document.getElementById('tab-btn-' + cat).classList.add('active');
     applyFilters();
 }
@@ -439,9 +393,7 @@ function toggleSort() {
     applyFilters();
 }
 
-// 🎯 計算全歷史三大策略的總勝率與總報酬
 function updateOverallMetrics() {
-    document.getElementById('overallCycleTxt').innerText = `週期: ${currentDays} 天`;
     const stratStats = {
         'BREAKOUT': { count: 0, win: 0, retSum: 0 },
         'READY': { count: 0, win: 0, retSum: 0 },
@@ -474,7 +426,7 @@ function updateOverallMetrics() {
             cntEl.innerText = '0檔';
             wrEl.innerText = '0%';
             retEl.innerText = '0.0%';
-            retEl.className = 'strat-main-metric c-gray';
+            retEl.className = 'mini-strat-val c-gray';
         } else {
             const wr = (data.win / data.count * 100).toFixed(1);
             const avgRet = (data.retSum / data.count).toFixed(2);
@@ -482,7 +434,7 @@ function updateOverallMetrics() {
             cntEl.innerText = `${data.count}檔`;
             wrEl.innerText = `${wr}%`;
             retEl.innerText = `${sign}${avgRet}%`;
-            retEl.className = `strat-main-metric ${avgRet >= 0 ? 'c-red' : 'c-green'}`;
+            retEl.className = `mini-strat-val ${avgRet >= 0 ? 'c-red' : 'c-green'}`;
         }
     });
 }
@@ -517,13 +469,6 @@ function applyFilters() {
         filteredList = filteredList.filter(r => r.grade === currentGrade);
     }
 
-    const catTitles = {
-        'ALL': '全部總覽',
-        'BREAKOUT': 'BREAKOUT（突破）',
-        'READY': 'READY（蓄勢）',
-        'LEADERS': 'LEADERS（領頭羊）'
-    };
-    
     const totalCount = filteredList.length;
     let winCount = 0;
     let totalRetSum = 0;
@@ -545,18 +490,18 @@ function applyFilters() {
     const wr = totalCount > 0 ? (winCount / totalCount * 100).toFixed(1) : '0.0';
     const avgRet = totalCount > 0 ? (totalRetSum / totalCount).toFixed(2) : '0.00';
     const sign = avgRet >= 0 ? '+' : '';
-    const gradeLabel = currentGrade === 'ALL' ? '全部評分' : `${currentGrade} 級`;
+    const retColor = avgRet >= 0 ? '#f87171' : '#4ade80';
 
-    document.getElementById('statBanner').innerHTML = `📊 <b>${catTitles[currentCategory]}</b> (${selectedDate} | ${gradeLabel} | ${currentDays}天期)<br>👉 當日樣本: <b>${totalCount}</b> 檔 | 勝率: <b>${wr}%</b> | 平均報酬: <b>${sign}${avgRet}%</b>`;
+    document.getElementById('dayInlineStat').innerHTML = `勝率 <b>${wr}%</b> | 均報 <span style="color:${retColor}; font-weight:bold;">${sign}${avgRet}%</span>`;
 
     if (totalCount === 0) {
-        document.getElementById('tableContainer').innerHTML = `<div class="table-wrapper"><table style="width:100%;"><tr><td style="color:#64748b; padding:30px; text-align:center;">此條件無任何入選股票</td></tr></table></div>`;
+        document.getElementById('tableContainer').innerHTML = `<div class="table-wrapper"><table style="width:100%;"><tr><td style="color:#64748b; padding:25px; text-align:center;">此條件無任何入選股票</td></tr></table></div>`;
         return;
     }
 
     let sortIcon = '⬍';
-    if (sortDirection === 'desc') sortIcon = '⬇️ (高&rarr;低)';
-    else if (sortDirection === 'asc') sortIcon = '⬆️ (低&rarr;高)';
+    if (sortDirection === 'desc') sortIcon = '⬇️';
+    else if (sortDirection === 'asc') sortIcon = '⬆️';
 
     let html = `<div class="table-wrapper"><table><thead><tr>
         <th class="sticky-stock">標的</th>
@@ -564,12 +509,12 @@ function applyFilters() {
         <th>分級</th>
         <th>進場</th>
         <th>停損</th>
-        <th class="sortable" onclick="toggleSort()" title="點擊切換升降冪排序">${currentDays}天累計 <span style="font-size:11px;">${sortIcon}</span></th>`;
+        <th class="sortable" onclick="toggleSort()" title="點擊切換升降冪">${currentDays}天累計 ${sortIcon}</th>`;
         
     for (let d = 1; d <= currentDays; d++) {
-        html += `<th>第${d}天<br><span style="font-size:9px; font-weight:normal; color:#64748b;">收盤/單日/累積</span></th>`;
+        html += `<th>第${d}天</th>`;
     }
-    html += `<th>首次破停損</th></tr></thead><tbody>`;
+    html += `<th>破停損</th></tr></thead><tbody>`;
 
     filteredList.forEach(r => {
         const subDays = r.daily_list.slice(0, currentDays);
