@@ -2,7 +2,6 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<!-- 💡 關鍵：解決手機字體過小縮放問題 -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>VCP 選股 多維度走勢追蹤戰情室</title>
 <style>
@@ -19,7 +18,6 @@
     h1 { margin: 0 0 4px 0; font-size: 18px; font-weight: 800; display: flex; align-items: center; gap: 6px; }
     .sub { color: #94a3b8; font-size: 11px; line-height: 1.4; }
     
-    /* 📱 手機優化：水平滑動工具列容器 */
     .filter-bar {
         display: flex;
         flex-direction: column;
@@ -38,7 +36,7 @@
         overflow-x: auto;
         padding-bottom: 2px;
         white-space: nowrap;
-        scrollbar-width: none; /* 隱藏捲軸 */
+        scrollbar-width: none;
     }
     .filter-row::-webkit-scrollbar { display: none; }
 
@@ -75,7 +73,6 @@
     .opt-btn.active-b { background: #2563eb !important; border-color: #60a5fa !important; color: #fff !important; }
     .opt-btn.active-c { background: #d97706 !important; border-color: #fbbf24 !important; color: #fff !important; }
 
-    /* 分頁按鈕列 */
     .tabs-row {
         display: flex;
         gap: 8px;
@@ -106,7 +103,6 @@
         box-shadow: 0 0 12px rgba(37,99,235,0.5);
     }
     
-    /* 統計橫幅 */
     .stat-banner {
         background: #111a33;
         border-left: 4px solid #3b82f6;
@@ -119,18 +115,19 @@
     }
     
     .scroll-hint {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
         font-size: 11px;
         color: #38bdf8;
-        text-align: right;
         margin-bottom: 6px;
         font-weight: bold;
     }
 
-    /* 📱 表格容器與手勢滑動支援 */
     .table-wrapper {
         width: 100%;
         overflow-x: auto;
-        -webkit-overflow-scrolling: touch; /* iOS 絲滑滾動 */
+        -webkit-overflow-scrolling: touch;
         background: #111a33;
         border-radius: 10px;
         border: 1px solid #1e293b;
@@ -163,7 +160,19 @@
         z-index: 10;
     }
 
-    /* 💡 智慧精簡固定欄：手機上將「代號與名稱」整合為一欄，節省寶貴寬度 */
+    /* 點擊排序欄位樣式 */
+    th.sortable {
+        cursor: pointer;
+        user-select: none;
+        background: #172554 !important;
+        color: #60a5fa !important;
+        transition: background 0.2s;
+    }
+    th.sortable:hover {
+        background: #1e3a8a !important;
+        color: #93c5fd !important;
+    }
+
     .sticky-stock {
         position: sticky;
         left: 0px;
@@ -183,14 +192,12 @@
     .stock-id-txt { font-size: 14px; font-weight: 800; color: #f8fafc; }
     .stock-name-txt { font-size: 12px; color: #94a3b8; }
 
-    /* 評分標籤 */
     .badge-grade { display: inline-block; width: 20px; height: 20px; line-height: 20px; text-align: center; border-radius: 4px; font-weight: 900; font-size: 11px; color: #fff; }
     .badge-grade-a { background: #16a34a; }
     .badge-grade-b { background: #2563eb; }
     .badge-grade-c { background: #d97706; }
     .badge-tag { display: inline-block; padding: 2px 5px; border-radius: 4px; font-size: 10px; background: #1e293b; color: #38bdf8; font-weight: bold; }
 
-    /* 每日走勢格子：手指好辨識、字體清晰 */
     .cell-box { display: flex; flex-direction: column; gap: 2px; align-items: center; min-width: 60px; }
     .date-label { font-size: 9px; color: #64748b; }
     .close-price { font-size: 12px; font-weight: bold; color: #f1f5f9; }
@@ -208,6 +215,14 @@
     .break-stop { color: #f59e0b; font-weight: bold; font-size: 11px; }
     .no-break { color: #10b981; font-size: 11px; }
     .stop-loss-val { color: #f87171; font-weight: bold; }
+    
+    /* 累計報酬顯眼欄位 */
+    .ret-highlight {
+        font-weight: 800;
+        font-size: 13px;
+        background: rgba(15, 23, 42, 0.45);
+        min-width: 75px;
+    }
 </style>
 </head>
 <body>
@@ -217,7 +232,6 @@
     <div class="sub">格內資訊：<b>[收盤價] &rarr; [單日漲跌%]</b>（<span class="limit-up" style="font-size:10px;">白底亮燈</span>代表漲停）&rarr; <b>[下方色塊：累計%]</b></div>
 </div>
 
-<!-- 📱 友善滑動工具列 -->
 <div class="filter-bar">
     <div class="filter-row">
         <span class="filter-label">🗓️ 月份：</span>
@@ -242,7 +256,6 @@
     </div>
 </div>
 
-<!-- 類別分頁 -->
 <div class="tabs-row">
     <button class="tab-btn active" id="tab-btn-ALL" onclick="switchCategory('ALL')">全部 (<span id="count-ALL">0</span>)</button>
     <button class="tab-btn" id="tab-btn-BREAKOUT" onclick="switchCategory('BREAKOUT')">🚀 突破 (<span id="count-BREAKOUT">0</span>)</button>
@@ -250,12 +263,13 @@
     <button class="tab-btn" id="tab-btn-LEADERS" onclick="switchCategory('LEADERS')">👑 領頭 (<span id="count-LEADERS">0</span>)</button>
 </div>
 
-<!-- 統計橫幅 -->
 <div class="stat-banner" id="statBanner">載入中...</div>
 
-<div class="scroll-hint">👉 表格可向右滑動查看更多天數 & 停損</div>
+<div class="scroll-hint">
+    <span>💡 點擊「累計報酬」欄可排序</span>
+    <span>👉 右滑看更多天數</span>
+</div>
 
-<!-- 核心表格容器 -->
 <div id="tableContainer"></div>
 
 <script>
@@ -263,6 +277,7 @@ const RAW_DATA = {"2026-09-01": [{"date_str": "2026-09-01", "stock_id": "6727", 
 let currentCategory = 'ALL';
 let currentGrade = 'ALL';
 let currentDays = 20;
+let sortDirection = 'none'; // 'none' -> 'desc' (大到小) -> 'asc' (小到大)
 
 function initDatePickers() {
     const allDates = Object.keys(RAW_DATA).sort().reverse();
@@ -339,6 +354,18 @@ function switchCategory(cat) {
     applyFilters();
 }
 
+// 排序切換函數
+function toggleSort() {
+    if (sortDirection === 'none') {
+        sortDirection = 'desc';
+    } else if (sortDirection === 'desc') {
+        sortDirection = 'asc';
+    } else {
+        sortDirection = 'none';
+    }
+    applyFilters();
+}
+
 function applyFilters() {
     const selectedDate = document.getElementById('daySelector').value;
     if (!selectedDate) return;
@@ -359,7 +386,7 @@ function applyFilters() {
     document.getElementById('count-READY').innerText = counts['READY'];
     document.getElementById('count-LEADERS').innerText = counts['LEADERS'];
 
-    let filteredList = dayRecords;
+    let filteredList = [...dayRecords];
     if (currentCategory !== 'ALL') {
         filteredList = filteredList.filter(r => r.stage === currentCategory);
     }
@@ -378,13 +405,21 @@ function applyFilters() {
     let winCount = 0;
     let totalRetSum = 0;
 
+    // 計算每檔在當前觀察天數下的累計報酬
     filteredList.forEach(r => {
         let subDays = r.daily_list.slice(0, currentDays);
         let actual = subDays.filter(x => x.cum_pct !== null);
-        let curTotalRet = actual.length > 0 ? actual[actual.length - 1].cum_pct : 0.0;
-        if (curTotalRet > 0) winCount++;
-        totalRetSum += curTotalRet;
+        r._calcRet = actual.length > 0 ? actual[actual.length - 1].cum_pct : 0.0;
+        if (r._calcRet > 0) winCount++;
+        totalRetSum += r._calcRet;
     });
+
+    // 依據累計報酬排序
+    if (sortDirection === 'desc') {
+        filteredList.sort((a, b) => (b._calcRet || 0) - (a._calcRet || 0));
+    } else if (sortDirection === 'asc') {
+        filteredList.sort((a, b) => (a._calcRet || 0) - (b._calcRet || 0));
+    }
     
     const wr = totalCount > 0 ? (winCount / totalCount * 100).toFixed(1) : '0.0';
     const avgRet = totalCount > 0 ? (totalRetSum / totalCount).toFixed(2) : '0.00';
@@ -398,22 +433,26 @@ function applyFilters() {
         return;
     }
 
+    let sortIcon = '⬍';
+    if (sortDirection === 'desc') sortIcon = '⬇️ (高&rarr;低)';
+    else if (sortDirection === 'asc') sortIcon = '⬆️ (低&rarr;高)';
+
     let html = `<div class="table-wrapper"><table><thead><tr>
         <th class="sticky-stock">標的</th>
         <th>評分</th>
         <th>分級</th>
         <th>進場</th>
-        <th>停損</th>`;
+        <th>停損</th>
+        <th class="sortable" onclick="toggleSort()" title="點擊切換升降冪排序">${currentDays}天累計 <span style="font-size:11px;">${sortIcon}</span></th>`;
         
     for (let d = 1; d <= currentDays; d++) {
         html += `<th>第${d}天<br><span style="font-size:9px; font-weight:normal; color:#64748b;">收盤/單日/累積</span></th>`;
     }
-    html += `<th>首次破停損</th><th>${currentDays}天累計</th></tr></thead><tbody>`;
+    html += `<th>首次破停損</th></tr></thead><tbody>`;
 
     filteredList.forEach(r => {
         const subDays = r.daily_list.slice(0, currentDays);
-        const actual = subDays.filter(x => x.cum_pct !== null);
-        const curTotalRet = actual.length > 0 ? actual[actual.length - 1].cum_pct : 0.0;
+        const curTotalRet = r._calcRet;
 
         const totCls = curTotalRet > 0 ? 'c-red' : (curTotalRet < 0 ? 'c-green' : 'c-gray');
         const signRet = curTotalRet > 0 ? '+' : '';
@@ -438,7 +477,8 @@ function applyFilters() {
             <td><span class="badge-grade ${gradeCls}">${r.grade}</span></td>
             <td><span class="badge-tag">${r.stage}</span></td>
             <td style="font-weight:600;">${r.entry_price}</td>
-            <td class="stop-loss-val">${r.stop_loss !== null ? r.stop_loss : '--'}</td>`;
+            <td class="stop-loss-val">${r.stop_loss !== null ? r.stop_loss : '--'}</td>
+            <td class="ret-highlight ${totCls}">${signRet}${curTotalRet}%</td>`;
 
         subDays.forEach(dInfo => {
             if (dInfo.day_pct === null) {
@@ -462,7 +502,6 @@ function applyFilters() {
         });
 
         html += `<td class="${stopCls}">${breakText}</td>
-            <td class="${totCls}" style="font-weight:800; font-size:13px;">${signRet}${curTotalRet}%</td>
         </tr>`;
     });
 
