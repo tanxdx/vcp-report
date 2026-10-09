@@ -17,6 +17,48 @@
     .header-area { margin-bottom: 12px; }
     h1 { margin: 0 0 4px 0; font-size: 18px; font-weight: 800; display: flex; align-items: center; gap: 6px; }
     .sub { color: #94a3b8; font-size: 11px; line-height: 1.4; }
+
+    /* 🏆 全歷史戰情看板卡片 */
+    .overall-dashboard {
+        background: #111a33;
+        border: 1px solid #1e293b;
+        border-radius: 10px;
+        padding: 12px;
+        margin-bottom: 14px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .overall-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 13px;
+        font-weight: 800;
+        color: #38bdf8;
+        margin-bottom: 10px;
+        border-bottom: 1px solid #1e293b;
+        padding-bottom: 6px;
+    }
+    .overall-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+    }
+    .strategy-card {
+        background: #172347;
+        border: 1px solid #283764;
+        border-radius: 8px;
+        padding: 8px 6px;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+    }
+    .strat-title { font-size: 12px; font-weight: 800; }
+    .strat-breakout { color: #f87171; }
+    .strat-ready { color: #38bdf8; }
+    .strat-leaders { color: #fbbf24; }
+    .strat-val-row { font-size: 11px; color: #94a3b8; display: flex; justify-content: space-around; }
+    .strat-main-metric { font-size: 13px; font-weight: 900; }
     
     .filter-bar {
         display: flex;
@@ -160,7 +202,6 @@
         z-index: 10;
     }
 
-    /* 點擊排序欄位樣式 */
     th.sortable {
         cursor: pointer;
         user-select: none;
@@ -216,7 +257,6 @@
     .no-break { color: #10b981; font-size: 11px; }
     .stop-loss-val { color: #f87171; font-weight: bold; }
     
-    /* 累計報酬顯眼欄位 */
     .ret-highlight {
         font-weight: 800;
         font-size: 13px;
@@ -230,6 +270,40 @@
 <div class="header-area">
     <h1>📈 VCP 選股：走勢追蹤戰情室</h1>
     <div class="sub">格內資訊：<b>[收盤價] &rarr; [單日漲跌%]</b>（<span class="limit-up" style="font-size:10px;">白底亮燈</span>代表漲停）&rarr; <b>[下方色塊：累計%]</b></div>
+</div>
+
+<!-- 🏆 全歷史戰情看板 -->
+<div class="overall-dashboard">
+    <div class="overall-header">
+        <span>🏆 各策略「從頭至今」全歷史總成績 (自 09/01 至今)</span>
+        <span id="overallCycleTxt" style="font-size:11px; color:#cbd5e1;">週期: 20 天</span>
+    </div>
+    <div class="overall-grid">
+        <div class="strategy-card">
+            <span class="strat-title strat-breakout">🚀 突破 (BREAKOUT)</span>
+            <span class="strat-main-metric" id="card-breakout-ret">--</span>
+            <div class="strat-val-row">
+                <span>勝率 <b id="card-breakout-wr">--</b></span>
+                <span>樣本 <b id="card-breakout-cnt">--</b></span>
+            </div>
+        </div>
+        <div class="strategy-card">
+            <span class="strat-title strat-ready">⏳ 蓄勢 (READY)</span>
+            <span class="strat-main-metric" id="card-ready-ret">--</span>
+            <div class="strat-val-row">
+                <span>勝率 <b id="card-ready-wr">--</b></span>
+                <span>樣本 <b id="card-ready-cnt">--</b></span>
+            </div>
+        </div>
+        <div class="strategy-card">
+            <span class="strat-title strat-leaders">👑 領頭 (LEADERS)</span>
+            <span class="strat-main-metric" id="card-leaders-ret">--</span>
+            <div class="strat-val-row">
+                <span>勝率 <b id="card-leaders-wr">--</b></span>
+                <span>樣本 <b id="card-leaders-cnt">--</b></span>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class="filter-bar">
@@ -277,7 +351,7 @@ const RAW_DATA = {"2026-09-01": [{"date_str": "2026-09-01", "stock_id": "6727", 
 let currentCategory = 'ALL';
 let currentGrade = 'ALL';
 let currentDays = 20;
-let sortDirection = 'none'; // 'none' -> 'desc' (大到小) -> 'asc' (小到大)
+let sortDirection = 'none';
 
 function initDatePickers() {
     const allDates = Object.keys(RAW_DATA).sort().reverse();
@@ -354,7 +428,6 @@ function switchCategory(cat) {
     applyFilters();
 }
 
-// 排序切換函數
 function toggleSort() {
     if (sortDirection === 'none') {
         sortDirection = 'desc';
@@ -366,7 +439,57 @@ function toggleSort() {
     applyFilters();
 }
 
+// 🎯 計算全歷史三大策略的總勝率與總報酬
+function updateOverallMetrics() {
+    document.getElementById('overallCycleTxt').innerText = `週期: ${currentDays} 天`;
+    const stratStats = {
+        'BREAKOUT': { count: 0, win: 0, retSum: 0 },
+        'READY': { count: 0, win: 0, retSum: 0 },
+        'LEADERS': { count: 0, win: 0, retSum: 0 }
+    };
+
+    Object.values(RAW_DATA).forEach(dayList => {
+        dayList.forEach(r => {
+            if (stratStats[r.stage]) {
+                const subDays = r.daily_list.slice(0, currentDays);
+                const actual = subDays.filter(x => x.cum_pct !== null);
+                if (actual.length > 0) {
+                    const curRet = actual[actual.length - 1].cum_pct;
+                    stratStats[r.stage].count++;
+                    if (curRet > 0) stratStats[r.stage].win++;
+                    stratStats[r.stage].retSum += curRet;
+                }
+            }
+        });
+    });
+
+    ['BREAKOUT', 'READY', 'LEADERS'].forEach(st => {
+        const lowerKey = st.toLowerCase();
+        const data = stratStats[st];
+        const cntEl = document.getElementById(`card-${lowerKey}-cnt`);
+        const wrEl = document.getElementById(`card-${lowerKey}-wr`);
+        const retEl = document.getElementById(`card-${lowerKey}-ret`);
+
+        if (data.count === 0) {
+            cntEl.innerText = '0檔';
+            wrEl.innerText = '0%';
+            retEl.innerText = '0.0%';
+            retEl.className = 'strat-main-metric c-gray';
+        } else {
+            const wr = (data.win / data.count * 100).toFixed(1);
+            const avgRet = (data.retSum / data.count).toFixed(2);
+            const sign = avgRet >= 0 ? '+' : '';
+            cntEl.innerText = `${data.count}檔`;
+            wrEl.innerText = `${wr}%`;
+            retEl.innerText = `${sign}${avgRet}%`;
+            retEl.className = `strat-main-metric ${avgRet >= 0 ? 'c-red' : 'c-green'}`;
+        }
+    });
+}
+
 function applyFilters() {
+    updateOverallMetrics();
+
     const selectedDate = document.getElementById('daySelector').value;
     if (!selectedDate) return;
 
@@ -405,7 +528,6 @@ function applyFilters() {
     let winCount = 0;
     let totalRetSum = 0;
 
-    // 計算每檔在當前觀察天數下的累計報酬
     filteredList.forEach(r => {
         let subDays = r.daily_list.slice(0, currentDays);
         let actual = subDays.filter(x => x.cum_pct !== null);
@@ -414,7 +536,6 @@ function applyFilters() {
         totalRetSum += r._calcRet;
     });
 
-    // 依據累計報酬排序
     if (sortDirection === 'desc') {
         filteredList.sort((a, b) => (b._calcRet || 0) - (a._calcRet || 0));
     } else if (sortDirection === 'asc') {
@@ -426,7 +547,7 @@ function applyFilters() {
     const sign = avgRet >= 0 ? '+' : '';
     const gradeLabel = currentGrade === 'ALL' ? '全部評分' : `${currentGrade} 級`;
 
-    document.getElementById('statBanner').innerHTML = `📊 <b>${catTitles[currentCategory]}</b> (${selectedDate} | ${gradeLabel} | ${currentDays}天期)<br>👉 樣本: <b>${totalCount}</b> 檔 | 勝率: <b>${wr}%</b> | 平均報酬: <b>${sign}${avgRet}%</b>`;
+    document.getElementById('statBanner').innerHTML = `📊 <b>${catTitles[currentCategory]}</b> (${selectedDate} | ${gradeLabel} | ${currentDays}天期)<br>👉 當日樣本: <b>${totalCount}</b> 檔 | 勝率: <b>${wr}%</b> | 平均報酬: <b>${sign}${avgRet}%</b>`;
 
     if (totalCount === 0) {
         document.getElementById('tableContainer').innerHTML = `<div class="table-wrapper"><table style="width:100%;"><tr><td style="color:#64748b; padding:30px; text-align:center;">此條件無任何入選股票</td></tr></table></div>`;
