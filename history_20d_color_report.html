@@ -134,7 +134,7 @@
     .pill-btn.active-b { background: #2563eb !important; border-color: #3b82f6 !important; color: #fff !important; }
     .pill-btn.active-c { background: #d97706 !important; border-color: #f59e0b !important; color: #fff !important; }
 
-    /* 分類標籤頁與當日小統計分離防CUT */
+    /* 分類標籤頁 */
     .tabs-wrapper {
         display: flex;
         gap: 5px;
@@ -162,7 +162,7 @@
         border-color: #3b82f6;
     }
     
-    /* 專屬獨立當日統計細條，寬度 100%，不再被截斷 */
+    /* 獨立當日統計細條 */
     .day-stat-strip {
         display: flex;
         justify-content: space-between;
@@ -289,26 +289,26 @@
     <div class="legend-tag"><span class="limit-up" style="font-size:9px;">白底</span>=漲停 | 自 09/01 累計</div>
 </div>
 
-<!-- 📱 緊湊型全歷史統計列（順序調整為：領頭 -> 突破 -> 蓄勢） -->
+<!-- 📱 緊湊型全歷史統計列（只採計滿期標的，杜絕未開跑 0% 稀釋） -->
 <div class="overall-compact">
     <div class="mini-strat-card">
         <div class="mini-strat-title">👑 領頭 (LEADERS)</div>
         <div class="mini-strat-val" id="card-leaders-ret">--</div>
-        <div class="mini-strat-sub">勝率 <b id="card-leaders-wr">--</b> | <span id="card-leaders-cnt">--</span></div>
+        <div class="mini-strat-sub">勝率 <b id="card-leaders-wr">--</b> | 滿期 <span id="card-leaders-cnt">--</span></div>
     </div>
     <div class="mini-strat-card">
         <div class="mini-strat-title">🚀 突破 (BREAKOUT)</div>
         <div class="mini-strat-val" id="card-breakout-ret">--</div>
-        <div class="mini-strat-sub">勝率 <b id="card-breakout-wr">--</b> | <span id="card-breakout-cnt">--</span></div>
+        <div class="mini-strat-sub">勝率 <b id="card-breakout-wr">--</b> | 滿期 <span id="card-breakout-cnt">--</span></div>
     </div>
     <div class="mini-strat-card">
         <div class="mini-strat-title">⏳ 蓄勢 (READY)</div>
         <div class="mini-strat-val" id="card-ready-ret">--</div>
-        <div class="mini-strat-sub">勝率 <b id="card-ready-wr">--</b> | <span id="card-ready-cnt">--</span></div>
+        <div class="mini-strat-sub">勝率 <b id="card-ready-wr">--</b> | 滿期 <span id="card-ready-cnt">--</span></div>
     </div>
 </div>
 
-<!-- 📱 整併控制列：加入左右切換箭頭 ◀ ▶ -->
+<!-- 控制列 -->
 <div class="controls-wrapper">
     <div class="ctrl-row">
         <select id="monthSelector" class="month-select" onchange="onMonthChange()"></select>
@@ -329,7 +329,7 @@
     </div>
 </div>
 
-<!-- 分類標籤頁（水平排開） -->
+<!-- 分類標籤頁 -->
 <div class="tabs-wrapper">
     <button class="tab-pill active" id="tab-btn-ALL" onclick="switchCategory('ALL')">全部 (<span id="count-ALL">0</span>)</button>
     <button class="tab-pill" id="tab-btn-LEADERS" onclick="switchCategory('LEADERS')">領頭 (<span id="count-LEADERS">0</span>)</button>
@@ -337,7 +337,7 @@
     <button class="tab-pill" id="tab-btn-READY" onclick="switchCategory('READY')">蓄勢 (<span id="count-READY">0</span>)</button>
 </div>
 
-<!-- 獨立當日統計細條（完整顯示，絕不被截斷） -->
+<!-- 獨立當日統計細條 -->
 <div class="day-stat-strip" id="dayInlineStat">
     <span>當日入選標的</span>
     <span>勝率: -- | 均報: --</span>
@@ -403,15 +403,12 @@ function onMonthChange() {
     applyFilters();
 }
 
-// 🎯 日期向左向右跳轉功能 (◀ 前一日 / ▶ 隔一日)
 function shiftDate(offset) {
-    const allDates = getAllSortedDates(); // 由新到舊: [10-07, 10-06, ...]
+    const allDates = getAllSortedDates();
     const currentSelected = document.getElementById('daySelector').value;
     const curIdx = allDates.indexOf(currentSelected);
     if (curIdx === -1) return;
 
-    // offset = -1 代表往前一天（歷史更舊，索引 +1）
-    // offset = 1 代表往後一天（歷史更新，索引 -1）
     const targetIdx = curIdx - offset;
     if (targetIdx >= 0 && targetIdx < allDates.length) {
         const targetDate = allDates[targetIdx];
@@ -437,8 +434,8 @@ function updateNavArrowState() {
     const prevBtn = document.getElementById('btnPrevDate');
     const nextBtn = document.getElementById('btnNextDate');
     
-    if (prevBtn) prevBtn.disabled = (curIdx >= allDates.length - 1); // 最早一天不可再往左
-    if (nextBtn) nextBtn.disabled = (curIdx <= 0); // 最新一天不可再往右
+    if (prevBtn) prevBtn.disabled = (curIdx >= allDates.length - 1);
+    if (nextBtn) nextBtn.disabled = (curIdx <= 0);
 }
 
 function setHoldingDays(days) {
@@ -486,6 +483,7 @@ function toggleSort() {
     applyFilters();
 }
 
+// 🎯 全歷史績效計算：嚴謹只採計「走滿 currentDays 天期」的真實樣本
 function updateOverallMetrics() {
     const stratStats = {
         'LEADERS': { count: 0, win: 0, retSum: 0 },
@@ -496,13 +494,13 @@ function updateOverallMetrics() {
     Object.values(RAW_DATA).forEach(dayList => {
         dayList.forEach(r => {
             if (stratStats[r.stage]) {
-                const subDays = r.daily_list.slice(0, currentDays);
-                const actual = subDays.filter(x => x.cum_pct !== null);
-                if (actual.length > 0) {
-                    const curRet = actual[actual.length - 1].cum_pct;
+                // 檢查是否走滿該天期
+                const targetDayObj = r.daily_list[currentDays - 1];
+                if (targetDayObj && targetDayObj.cum_pct !== null) {
+                    const finalRet = targetDayObj.cum_pct;
                     stratStats[r.stage].count++;
-                    if (curRet > 0) stratStats[r.stage].win++;
-                    stratStats[r.stage].retSum += curRet;
+                    if (finalRet > 0) stratStats[r.stage].win++;
+                    stratStats[r.stage].retSum += finalRet;
                 }
             }
         });
@@ -518,7 +516,7 @@ function updateOverallMetrics() {
         if (data.count === 0) {
             cntEl.innerText = '0檔';
             wrEl.innerText = '0%';
-            retEl.innerText = '0.0%';
+            retEl.innerText = '--';
             retEl.className = 'mini-strat-val c-gray';
         } else {
             const wr = (data.win / data.count * 100).toFixed(1);
@@ -564,32 +562,59 @@ function applyFilters() {
     }
 
     const totalCount = filteredList.length;
+    let validSampleCount = 0;  // 排除完全尚未開跑的標的
     let winCount = 0;
     let totalRetSum = 0;
+    let maxDaysAvailable = 0;
 
     filteredList.forEach(r => {
         let subDays = r.daily_list.slice(0, currentDays);
         let actual = subDays.filter(x => x.cum_pct !== null);
-        r._calcRet = actual.length > 0 ? actual[actual.length - 1].cum_pct : 0.0;
-        if (r._calcRet > 0) winCount++;
-        totalRetSum += r._calcRet;
+        if (actual.length > maxDaysAvailable) {
+            maxDaysAvailable = actual.length;
+        }
+        
+        if (actual.length > 0) {
+            // 抓取當前已發生的最新累積報酬
+            r._calcRet = actual[actual.length - 1].cum_pct;
+            r._hasData = true;
+            validSampleCount++;
+            if (r._calcRet > 0) winCount++;
+            totalRetSum += r._calcRet;
+        } else {
+            r._calcRet = null;
+            r._hasData = false;
+        }
     });
 
+    // 排序處理：無資料的標的排在最後
     if (sortDirection === 'desc') {
-        filteredList.sort((a, b) => (b._calcRet || 0) - (a._calcRet || 0));
+        filteredList.sort((a, b) => {
+            if (a._calcRet === null) return 1;
+            if (b._calcRet === null) return -1;
+            return b._calcRet - a._calcRet;
+        });
     } else if (sortDirection === 'asc') {
-        filteredList.sort((a, b) => (a._calcRet || 0) - (b._calcRet || 0));
+        filteredList.sort((a, b) => {
+            if (a._calcRet === null) return 1;
+            if (b._calcRet === null) return -1;
+            return a._calcRet - b._calcRet;
+        });
     }
     
-    const wr = totalCount > 0 ? (winCount / totalCount * 100).toFixed(1) : '0.0';
-    const avgRet = totalCount > 0 ? (totalRetSum / totalCount).toFixed(2) : '0.00';
+    // 勝率與均報：分母改為「真實有行情之樣本數」
+    const wr = validSampleCount > 0 ? (winCount / validSampleCount * 100).toFixed(1) : '0.0';
+    const avgRet = validSampleCount > 0 ? (totalRetSum / validSampleCount).toFixed(2) : '0.00';
     const sign = avgRet >= 0 ? '+' : '';
     const retColor = avgRet >= 0 ? '#f87171' : '#4ade80';
 
-    // 獨立橫條輸出，包含目前查看的日期與天數
+    const statusNote = (maxDaysAvailable < currentDays && maxDaysAvailable > 0) 
+        ? ` <span style="color:#f59e0b; font-size:10px;">(累計至第${maxDaysAvailable}天)</span>` 
+        : '';
+
     document.getElementById('dayInlineStat').innerHTML = `
-        <span>📅 <b>${selectedDate}</b> (<b>${totalCount}</b>檔)</span>
-        <span>勝率: <b style="color:#38bdf8;">${wr}%</b> | 均報: <b style="color:${retColor};">${sign}${avgRet}%</b></span>
+        <span>📅 <b>${selectedDate}</b> (<b>${validSampleCount}</b>/${totalCount}檔)${statusNote}</span>
+        <span>勝率: <b style="color:#38bdf8;">${wr}%</b> | 均報: <b style="color:${retColor};">${validSampleCount > 0 ? (sign + avgRet + '%') : '--'}</b></span>
     `;
 
     if (totalCount === 0) {
@@ -618,8 +643,14 @@ function applyFilters() {
         const subDays = r.daily_list.slice(0, currentDays);
         const curTotalRet = r._calcRet;
 
-        const totCls = curTotalRet > 0 ? 'c-red' : (curTotalRet < 0 ? 'c-green' : 'c-gray');
-        const signRet = curTotalRet > 0 ? '+' : '';
+        let retCellContent = '--';
+        let totCls = 'c-gray';
+        if (curTotalRet !== null) {
+            totCls = curTotalRet > 0 ? 'c-red' : (curTotalRet < 0 ? 'c-green' : 'c-gray');
+            const signRet = curTotalRet > 0 ? '+' : '';
+            retCellContent = `${signRet}${curTotalRet}%`;
+        }
+
         const gradeCls = r.grade === 'A' ? 'badge-grade-a' : (r.grade === 'B' ? 'badge-grade-b' : 'badge-grade-c');
         
         let breakText = '未跌破';
@@ -642,7 +673,7 @@ function applyFilters() {
             <td><span class="badge-tag">${r.stage}</span></td>
             <td style="font-weight:600;">${r.entry_price}</td>
             <td class="stop-loss-val">${r.stop_loss !== null ? r.stop_loss : '--'}</td>
-            <td class="ret-highlight ${totCls}">${signRet}${curTotalRet}%</td>`;
+            <td class="ret-highlight ${totCls}">${retCellContent}</td>`;
 
         subDays.forEach(dInfo => {
             if (dInfo.day_pct === null) {
