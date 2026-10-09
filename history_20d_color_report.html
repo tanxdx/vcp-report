@@ -23,7 +23,7 @@
     h1 { margin: 0; font-size: 15px; font-weight: 800; display: flex; align-items: center; gap: 4px; }
     .legend-tag { font-size: 10px; color: #94a3b8; }
 
-    /* 📱 緊湊型全歷史總結條（橫向滑動或小卡片） */
+    /* 📱 緊湊型全歷史統計列（順序：領頭 -> 突破 -> 蓄勢） */
     .overall-compact {
         display: flex;
         gap: 6px;
@@ -67,11 +67,50 @@
     }
     .ctrl-row::-webkit-scrollbar { display: none; }
     
+    .date-nav-group {
+        display: flex;
+        align-items: center;
+        gap: 3px;
+        background: #1e293b;
+        border: 1px solid #3b82f6;
+        border-radius: 6px;
+        padding: 1px 3px;
+    }
+
+    .nav-arrow-btn {
+        background: transparent;
+        border: none;
+        color: #38bdf8;
+        font-size: 13px;
+        font-weight: bold;
+        cursor: pointer;
+        padding: 3px 6px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        user-select: none;
+        transition: background 0.15s;
+    }
+    .nav-arrow-btn:active { background: #334155; }
+    .nav-arrow-btn:disabled { color: #475569; cursor: not-allowed; }
+
     .date-select {
+        background: transparent;
+        color: #38bdf8;
+        border: none;
+        padding: 3px 4px;
+        font-size: 12px;
+        font-weight: bold;
+        outline: none;
+        cursor: pointer;
+    }
+
+    .month-select {
         background: #1e293b;
         color: #38bdf8;
         border: 1px solid #3b82f6;
-        padding: 4px 8px;
+        padding: 4px 6px;
         border-radius: 6px;
         font-size: 12px;
         font-weight: bold;
@@ -95,29 +134,27 @@
     .pill-btn.active-b { background: #2563eb !important; border-color: #3b82f6 !important; color: #fff !important; }
     .pill-btn.active-c { background: #d97706 !important; border-color: #f59e0b !important; color: #fff !important; }
 
-    /* 分類標籤頁與當日數據融合 */
+    /* 分類標籤頁與當日小統計分離防CUT */
     .tabs-wrapper {
         display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 6px;
-        margin-bottom: 4px;
+        gap: 5px;
+        margin-bottom: 6px;
         overflow-x: auto;
         scrollbar-width: none;
     }
     .tabs-wrapper::-webkit-scrollbar { display: none; }
-    .tab-pills { display: flex; gap: 4px; }
     
     .tab-pill {
         background: #111a33;
         color: #94a3b8;
         border: 1px solid #1e293b;
-        padding: 5px 10px;
+        padding: 5px 12px;
         border-radius: 6px;
         cursor: pointer;
         font-size: 11px;
         font-weight: 700;
         white-space: nowrap;
+        flex-shrink: 0;
     }
     .tab-pill.active {
         background: #2563eb;
@@ -125,13 +162,19 @@
         border-color: #3b82f6;
     }
     
-    .day-summary-inline {
+    /* 專屬獨立當日統計細條，寬度 100%，不再被截斷 */
+    .day-stat-strip {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #111a33;
+        border-left: 3px solid #38bdf8;
+        border-radius: 4px;
+        padding: 4px 8px;
+        margin-bottom: 6px;
         font-size: 11px;
         color: #cbd5e1;
-        white-space: nowrap;
-        padding: 0 4px;
     }
-    .day-summary-inline b { color: #38bdf8; }
 
     .table-hint-row {
         display: flex;
@@ -246,8 +289,13 @@
     <div class="legend-tag"><span class="limit-up" style="font-size:9px;">白底</span>=漲停 | 自 09/01 累計</div>
 </div>
 
-<!-- 📱 緊湊型全歷史統計列 -->
+<!-- 📱 緊湊型全歷史統計列（順序調整為：領頭 -> 突破 -> 蓄勢） -->
 <div class="overall-compact">
+    <div class="mini-strat-card">
+        <div class="mini-strat-title">👑 領頭 (LEADERS)</div>
+        <div class="mini-strat-val" id="card-leaders-ret">--</div>
+        <div class="mini-strat-sub">勝率 <b id="card-leaders-wr">--</b> | <span id="card-leaders-cnt">--</span></div>
+    </div>
     <div class="mini-strat-card">
         <div class="mini-strat-title">🚀 突破 (BREAKOUT)</div>
         <div class="mini-strat-val" id="card-breakout-ret">--</div>
@@ -258,18 +306,17 @@
         <div class="mini-strat-val" id="card-ready-ret">--</div>
         <div class="mini-strat-sub">勝率 <b id="card-ready-wr">--</b> | <span id="card-ready-cnt">--</span></div>
     </div>
-    <div class="mini-strat-card">
-        <div class="mini-strat-title">👑 領頭 (LEADERS)</div>
-        <div class="mini-strat-val" id="card-leaders-ret">--</div>
-        <div class="mini-strat-sub">勝率 <b id="card-leaders-wr">--</b> | <span id="card-leaders-cnt">--</span></div>
-    </div>
 </div>
 
-<!-- 📱 整併控制列（兩排精巧橫列） -->
+<!-- 📱 整併控制列：加入左右切換箭頭 ◀ ▶ -->
 <div class="controls-wrapper">
     <div class="ctrl-row">
-        <select id="monthSelector" class="date-select" onchange="onMonthChange()"></select>
-        <select id="daySelector" class="date-select" onchange="applyFilters()"></select>
+        <select id="monthSelector" class="month-select" onchange="onMonthChange()"></select>
+        <div class="date-nav-group">
+            <button class="nav-arrow-btn" id="btnPrevDate" onclick="shiftDate(-1)" title="前一個交易日">◀</button>
+            <select id="daySelector" class="date-select" onchange="applyFilters()"></select>
+            <button class="nav-arrow-btn" id="btnNextDate" onclick="shiftDate(1)" title="後一個交易日">▶</button>
+        </div>
         <button class="pill-btn" id="btn-days-7" onclick="setHoldingDays(7)">7天</button>
         <button class="pill-btn active-days" id="btn-days-20" onclick="setHoldingDays(20)">20天</button>
         <button class="pill-btn" id="btn-days-30" onclick="setHoldingDays(30)">30天</button>
@@ -282,15 +329,18 @@
     </div>
 </div>
 
-<!-- 分類標籤頁與當日小統計整併 -->
+<!-- 分類標籤頁（水平排開） -->
 <div class="tabs-wrapper">
-    <div class="tab-pills">
-        <button class="tab-pill active" id="tab-btn-ALL" onclick="switchCategory('ALL')">全部 (<span id="count-ALL">0</span>)</button>
-        <button class="tab-pill" id="tab-btn-BREAKOUT" onclick="switchCategory('BREAKOUT')">突破 (<span id="count-BREAKOUT">0</span>)</button>
-        <button class="tab-pill" id="tab-btn-READY" onclick="switchCategory('READY')">蓄勢 (<span id="count-READY">0</span>)</button>
-        <button class="tab-pill" id="tab-btn-LEADERS" onclick="switchCategory('LEADERS')">領頭 (<span id="count-LEADERS">0</span>)</button>
-    </div>
-    <div class="day-summary-inline" id="dayInlineStat">勝率 -- | 報 --</div>
+    <button class="tab-pill active" id="tab-btn-ALL" onclick="switchCategory('ALL')">全部 (<span id="count-ALL">0</span>)</button>
+    <button class="tab-pill" id="tab-btn-LEADERS" onclick="switchCategory('LEADERS')">領頭 (<span id="count-LEADERS">0</span>)</button>
+    <button class="tab-pill" id="tab-btn-BREAKOUT" onclick="switchCategory('BREAKOUT')">突破 (<span id="count-BREAKOUT">0</span>)</button>
+    <button class="tab-pill" id="tab-btn-READY" onclick="switchCategory('READY')">蓄勢 (<span id="count-READY">0</span>)</button>
+</div>
+
+<!-- 獨立當日統計細條（完整顯示，絕不被截斷） -->
+<div class="day-stat-strip" id="dayInlineStat">
+    <span>當日入選標的</span>
+    <span>勝率: -- | 均報: --</span>
 </div>
 
 <div class="table-hint-row">
@@ -307,8 +357,12 @@ let currentGrade = 'ALL';
 let currentDays = 20;
 let sortDirection = 'none';
 
+function getAllSortedDates() {
+    return Object.keys(RAW_DATA).sort().reverse();
+}
+
 function initDatePickers() {
-    const allDates = Object.keys(RAW_DATA).sort().reverse();
+    const allDates = getAllSortedDates();
     if (allDates.length === 0) return;
 
     const monthMap = {};
@@ -333,7 +387,7 @@ function initDatePickers() {
 
 function onMonthChange() {
     const selectedMonth = document.getElementById('monthSelector').value;
-    const allDates = Object.keys(RAW_DATA).sort().reverse();
+    const allDates = getAllSortedDates();
     const daySelector = document.getElementById('daySelector');
     daySelector.innerHTML = '';
 
@@ -345,7 +399,46 @@ function onMonthChange() {
         daySelector.appendChild(opt);
     });
 
+    updateNavArrowState();
     applyFilters();
+}
+
+// 🎯 日期向左向右跳轉功能 (◀ 前一日 / ▶ 隔一日)
+function shiftDate(offset) {
+    const allDates = getAllSortedDates(); // 由新到舊: [10-07, 10-06, ...]
+    const currentSelected = document.getElementById('daySelector').value;
+    const curIdx = allDates.indexOf(currentSelected);
+    if (curIdx === -1) return;
+
+    // offset = -1 代表往前一天（歷史更舊，索引 +1）
+    // offset = 1 代表往後一天（歷史更新，索引 -1）
+    const targetIdx = curIdx - offset;
+    if (targetIdx >= 0 && targetIdx < allDates.length) {
+        const targetDate = allDates[targetIdx];
+        const targetMonth = targetDate.substring(0, 7);
+        
+        const monthSelector = document.getElementById('monthSelector');
+        if (monthSelector.value !== targetMonth) {
+            monthSelector.value = targetMonth;
+            onMonthChange();
+        }
+        
+        document.getElementById('daySelector').value = targetDate;
+        updateNavArrowState();
+        applyFilters();
+    }
+}
+
+function updateNavArrowState() {
+    const allDates = getAllSortedDates();
+    const currentSelected = document.getElementById('daySelector').value;
+    const curIdx = allDates.indexOf(currentSelected);
+    
+    const prevBtn = document.getElementById('btnPrevDate');
+    const nextBtn = document.getElementById('btnNextDate');
+    
+    if (prevBtn) prevBtn.disabled = (curIdx >= allDates.length - 1); // 最早一天不可再往左
+    if (nextBtn) nextBtn.disabled = (curIdx <= 0); // 最新一天不可再往右
 }
 
 function setHoldingDays(days) {
@@ -395,9 +488,9 @@ function toggleSort() {
 
 function updateOverallMetrics() {
     const stratStats = {
+        'LEADERS': { count: 0, win: 0, retSum: 0 },
         'BREAKOUT': { count: 0, win: 0, retSum: 0 },
-        'READY': { count: 0, win: 0, retSum: 0 },
-        'LEADERS': { count: 0, win: 0, retSum: 0 }
+        'READY': { count: 0, win: 0, retSum: 0 }
     };
 
     Object.values(RAW_DATA).forEach(dayList => {
@@ -415,7 +508,7 @@ function updateOverallMetrics() {
         });
     });
 
-    ['BREAKOUT', 'READY', 'LEADERS'].forEach(st => {
+    ['LEADERS', 'BREAKOUT', 'READY'].forEach(st => {
         const lowerKey = st.toLowerCase();
         const data = stratStats[st];
         const cntEl = document.getElementById(`card-${lowerKey}-cnt`);
@@ -441,6 +534,7 @@ function updateOverallMetrics() {
 
 function applyFilters() {
     updateOverallMetrics();
+    updateNavArrowState();
 
     const selectedDate = document.getElementById('daySelector').value;
     if (!selectedDate) return;
@@ -457,9 +551,9 @@ function applyFilters() {
     });
     
     document.getElementById('count-ALL').innerText = counts['ALL'];
+    document.getElementById('count-LEADERS').innerText = counts['LEADERS'];
     document.getElementById('count-BREAKOUT').innerText = counts['BREAKOUT'];
     document.getElementById('count-READY').innerText = counts['READY'];
-    document.getElementById('count-LEADERS').innerText = counts['LEADERS'];
 
     let filteredList = [...dayRecords];
     if (currentCategory !== 'ALL') {
@@ -492,7 +586,11 @@ function applyFilters() {
     const sign = avgRet >= 0 ? '+' : '';
     const retColor = avgRet >= 0 ? '#f87171' : '#4ade80';
 
-    document.getElementById('dayInlineStat').innerHTML = `勝率 <b>${wr}%</b> | 均報 <span style="color:${retColor}; font-weight:bold;">${sign}${avgRet}%</span>`;
+    // 獨立橫條輸出，包含目前查看的日期與天數
+    document.getElementById('dayInlineStat').innerHTML = `
+        <span>📅 <b>${selectedDate}</b> (<b>${totalCount}</b>檔)</span>
+        <span>勝率: <b style="color:#38bdf8;">${wr}%</b> | 均報: <b style="color:${retColor};">${sign}${avgRet}%</b></span>
+    `;
 
     if (totalCount === 0) {
         document.getElementById('tableContainer').innerHTML = `<div class="table-wrapper"><table style="width:100%;"><tr><td style="color:#64748b; padding:25px; text-align:center;">此條件無任何入選股票</td></tr></table></div>`;
