@@ -11,17 +11,17 @@
         background: #090e1f;
         color: #f1f5f9;
         margin: 0;
-        padding: 8px 10px;
+        padding: 6px 8px;
     }
     
     .header-area {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 6px;
+        margin-bottom: 5px;
     }
-    h1 { margin: 0; font-size: 15px; font-weight: 800; display: flex; align-items: center; gap: 4px; }
-    .legend-tag { font-size: 10px; color: #94a3b8; display: flex; gap: 6px; align-items: center; }
+    h1 { margin: 0; font-size: 14px; font-weight: 800; display: flex; align-items: center; gap: 4px; }
+    .legend-tag { font-size: 9px; color: #94a3b8; display: flex; gap: 4px; align-items: center; }
 
     /* 戰情卡範圍標題列 */
     .strat-scope-header {
@@ -29,7 +29,7 @@
         justify-content: space-between;
         align-items: center;
         margin-bottom: 4px;
-        padding: 0 2px;
+        padding: 0 1px;
     }
     .strat-scope-title {
         font-size: 11px;
@@ -40,9 +40,9 @@
         background: #1e293b;
         border: 1px solid #334155;
         color: #94a3b8;
-        font-size: 10px;
+        font-size: 9px;
         font-weight: bold;
-        padding: 2px 7px;
+        padding: 2px 6px;
         border-radius: 4px;
         cursor: pointer;
     }
@@ -52,13 +52,13 @@
         border-color: #38bdf8;
     }
 
-    /* 📱 緊湊型統計列（領頭 -> 突破 -> 蓄勢） */
+    /* 📱 緊湊型統計列（防截字專用微調） */
     .overall-compact {
         display: flex;
-        gap: 6px;
+        gap: 5px;
         overflow-x: auto;
         scrollbar-width: none;
-        margin-bottom: 8px;
+        margin-bottom: 6px;
     }
     .overall-compact::-webkit-scrollbar { display: none; }
     
@@ -66,31 +66,48 @@
         background: #111a33;
         border: 1px solid #1e293b;
         border-radius: 6px;
-        padding: 5px 8px;
+        padding: 4px 6px;
         flex: 1;
-        min-width: 115px;
+        min-width: 105px;
         white-space: nowrap;
     }
-    .mini-strat-title { font-size: 10px; font-weight: 700; color: #94a3b8; margin-bottom: 2px; }
-    .mini-strat-highlight { font-size: 11px; color: #f59e0b; font-weight: 800; margin-bottom: 2px; }
-    .mini-strat-val { font-size: 13px; font-weight: 800; }
-    .mini-strat-sub { font-size: 9px; color: #64748b; margin-top: 1px; }
+    .mini-strat-title { font-size: 9px; font-weight: 700; color: #94a3b8; margin-bottom: 1px; }
+    .mini-strat-highlight { font-size: 10px; color: #f59e0b; font-weight: 800; }
+    
+    /* 拆成單行兩欄或縮小字體防擠壓 */
+    .mini-stat-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        font-size: 11px;
+        font-weight: 800;
+        margin: 1px 0;
+    }
+    .mini-strat-sub {
+        font-size: 8.5px;
+        color: #64748b;
+        display: flex;
+        justify-content: space-between;
+        border-top: 1px solid #1e293b;
+        padding-top: 2px;
+        margin-top: 2px;
+    }
 
     /* 控制列 */
     .controls-wrapper {
         background: #111a33;
         border: 1px solid #1e293b;
-        border-radius: 8px;
-        padding: 6px 8px;
-        margin-bottom: 8px;
+        border-radius: 6px;
+        padding: 5px 6px;
+        margin-bottom: 6px;
         display: flex;
         flex-direction: column;
-        gap: 6px;
+        gap: 5px;
     }
     .ctrl-row {
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: 5px;
         overflow-x: auto;
         scrollbar-width: none;
         white-space: nowrap;
@@ -100,27 +117,26 @@
     .date-nav-group {
         display: flex;
         align-items: center;
-        gap: 3px;
+        gap: 2px;
         background: #1e293b;
         border: 1px solid #3b82f6;
-        border-radius: 6px;
-        padding: 1px 3px;
+        border-radius: 5px;
+        padding: 1px 2px;
     }
 
     .nav-arrow-btn {
         background: transparent;
         border: none;
         color: #38bdf8;
-        font-size: 13px;
+        font-size: 12px;
         font-weight: bold;
         cursor: pointer;
-        padding: 3px 6px;
-        border-radius: 4px;
+        padding: 2px 4px;
+        border-radius: 3px;
         display: flex;
         align-items: center;
         justify-content: center;
         user-select: none;
-        transition: background 0.15s;
     }
     .nav-arrow-btn:active { background: #334155; }
     .nav-arrow-btn:disabled { color: #475569; cursor: not-allowed; }
@@ -129,8 +145,8 @@
         background: transparent;
         color: #38bdf8;
         border: none;
-        padding: 3px 4px;
-        font-size: 12px;
+        padding: 2px 2px;
+        font-size: 11px;
         font-weight: bold;
         outline: none;
         cursor: pointer;
@@ -140,9 +156,9 @@
         background: #1e293b;
         color: #38bdf8;
         border: 1px solid #3b82f6;
-        padding: 4px 6px;
-        border-radius: 6px;
-        font-size: 12px;
+        padding: 3px 5px;
+        border-radius: 5px;
+        font-size: 11px;
         font-weight: bold;
         outline: none;
     }
@@ -151,10 +167,10 @@
         background: #1e293b;
         border: 1px solid #334155;
         color: #94a3b8;
-        padding: 4px 10px;
-        border-radius: 6px;
+        padding: 3px 8px;
+        border-radius: 5px;
         cursor: pointer;
-        font-size: 11px;
+        font-size: 10px;
         font-weight: 700;
         transition: all 0.15s;
     }
@@ -167,8 +183,8 @@
     /* 分類標籤頁 */
     .tabs-wrapper {
         display: flex;
-        gap: 5px;
-        margin-bottom: 6px;
+        gap: 4px;
+        margin-bottom: 5px;
         overflow-x: auto;
         scrollbar-width: none;
     }
@@ -178,10 +194,10 @@
         background: #111a33;
         color: #94a3b8;
         border: 1px solid #1e293b;
-        padding: 5px 12px;
-        border-radius: 6px;
+        padding: 4px 10px;
+        border-radius: 5px;
         cursor: pointer;
-        font-size: 11px;
+        font-size: 10px;
         font-weight: 700;
         white-space: nowrap;
         flex-shrink: 0;
@@ -192,7 +208,7 @@
         border-color: #3b82f6;
     }
     
-    /* 獨立當日統計細條 */
+    /* 獨立當日統計細條（優化單行防折行） */
     .day-stat-strip {
         display: flex;
         justify-content: space-between;
@@ -200,43 +216,44 @@
         background: #111a33;
         border-left: 3px solid #38bdf8;
         border-radius: 4px;
-        padding: 5px 8px;
-        margin-bottom: 6px;
-        font-size: 11px;
+        padding: 4px 6px;
+        margin-bottom: 5px;
+        font-size: 10px;
         color: #cbd5e1;
+        white-space: nowrap;
     }
 
     .table-hint-row {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        font-size: 10px;
+        font-size: 9px;
         color: #64748b;
-        margin-bottom: 4px;
-        padding: 0 2px;
+        margin-bottom: 3px;
+        padding: 0 1px;
     }
 
-    /* 表格本體 */
+    /* 表格本體（收斂寬度，讓右側天數露出更多） */
     .table-wrapper {
         width: 100%;
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
         background: #111a33;
-        border-radius: 8px;
+        border-radius: 6px;
         border: 1px solid #1e293b;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-        margin-bottom: 20px;
+        margin-bottom: 15px;
     }
 
     table {
         border-collapse: separate;
         border-spacing: 0;
         width: 100%;
-        font-size: 12px;
+        font-size: 11px;
     }
 
     th, td {
-        padding: 6px 5px;
+        padding: 4px 3px;
         text-align: center;
         border-bottom: 1px solid #1e293b;
         border-right: 1px solid #1e293b;
@@ -246,7 +263,7 @@
     th {
         background: #090e1f;
         color: #94a3b8;
-        font-size: 11px;
+        font-size: 10px;
         font-weight: 700;
         position: sticky;
         top: 0;
@@ -260,17 +277,15 @@
         color: #93c5fd !important;
         transition: background 0.15s;
     }
-    th.sortable:hover {
-        background: #2563eb !important;
-    }
 
     .sticky-stock {
         position: sticky;
         left: 0px;
         background: #111a33 !important;
         z-index: 5;
-        min-width: 82px;
-        box-shadow: 2px 0 5px rgba(0,0,0,0.35);
+        min-width: 68px;
+        box-shadow: 1px 0 4px rgba(0,0,0,0.35);
+        padding: 4px 2px;
     }
     th.sticky-stock { background: #090e1f !important; z-index: 15; }
 
@@ -278,27 +293,27 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 1px;
+        gap: 0px;
     }
-    .stock-id-txt { font-size: 13px; font-weight: 800; color: #f8fafc; }
-    .stock-name-txt { font-size: 11px; color: #94a3b8; }
+    .stock-id-txt { font-size: 12px; font-weight: 800; color: #f8fafc; line-height: 1.1; }
+    .stock-name-txt { font-size: 10px; color: #94a3b8; line-height: 1.1; }
 
-    .badge-grade { display: inline-block; width: 18px; height: 18px; line-height: 18px; text-align: center; border-radius: 4px; font-weight: 800; font-size: 10px; color: #fff; }
+    .badge-grade { display: inline-block; width: 16px; height: 16px; line-height: 16px; text-align: center; border-radius: 3px; font-weight: 800; font-size: 9px; color: #fff; }
     .badge-grade-a { background: #16a34a; }
     .badge-grade-b { background: #2563eb; }
     .badge-grade-c { background: #d97706; }
-    .badge-tag { display: inline-block; padding: 2px 4px; border-radius: 4px; font-size: 9px; background: #1e293b; color: #38bdf8; font-weight: bold; }
+    .badge-tag { display: inline-block; padding: 1px 3px; border-radius: 3px; font-size: 8px; background: #1e293b; color: #38bdf8; font-weight: bold; }
 
-    .cell-box { display: flex; flex-direction: column; gap: 1px; align-items: center; min-width: 52px; }
+    .cell-box { display: flex; flex-direction: column; gap: 1px; align-items: center; min-width: 48px; }
     .date-label { font-size: 8px; color: #64748b; }
-    .close-price { font-size: 11px; font-weight: 700; color: #f1f5f9; }
-    .day-val { font-size: 10px; font-weight: 700; padding: 0 2px; border-radius: 3px; }
-    .cum-box { font-size: 9px; padding: 0 3px; border-radius: 3px; }
+    .close-price { font-size: 10px; font-weight: 700; color: #f1f5f9; }
+    .day-val { font-size: 9px; font-weight: 700; padding: 0 1px; border-radius: 2px; }
+    .cum-box { font-size: 8.5px; padding: 0 2px; border-radius: 2px; }
     
     .c-red { color: #f87171; }
     .c-green { color: #4ade80; }
     .c-gray { color: #64748b; }
-    .limit-up { background: #ffffff !important; color: #dc2626 !important; font-weight: 900 !important; border-radius: 3px; padding: 0 3px !important; }
+    .limit-up { background: #ffffff !important; color: #dc2626 !important; font-weight: 900 !important; border-radius: 2px; padding: 0 2px !important; }
     .bg-red { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
     .bg-green { background: rgba(34, 197, 94, 0.2); color: #86efac; }
     .bg-gray { background: #1e293b; color: #64748b; }
@@ -307,48 +322,44 @@
         background: #f97316 !important;
         color: #ffffff !important;
         font-weight: 900;
-        font-size: 9px;
-        padding: 1px 4px;
-        border-radius: 3px;
-        box-shadow: 0 0 6px rgba(249, 115, 22, 0.6);
+        font-size: 8px;
+        padding: 0 3px;
+        border-radius: 2px;
     }
     .badge-reentry {
         background: #a855f7 !important;
         color: #ffffff !important;
         font-weight: 900;
-        font-size: 9px;
-        padding: 1px 4px;
-        border-radius: 3px;
-        box-shadow: 0 0 6px rgba(168, 85, 247, 0.6);
+        font-size: 8px;
+        padding: 0 3px;
+        border-radius: 2px;
     }
-    .waiting-box {
-        opacity: 0.45;
-    }
+    .waiting-box { opacity: 0.45; }
     
-    .break-stop { color: #f59e0b; font-weight: bold; font-size: 10px; }
-    .no-break { color: #10b981; font-size: 10px; }
-    .stop-loss-val { color: #f87171; font-weight: 700; font-size: 11px; }
+    .break-stop { color: #f59e0b; font-weight: bold; font-size: 9px; }
+    .no-break { color: #10b981; font-size: 9px; }
+    .stop-loss-val { color: #f87171; font-weight: 700; font-size: 10px; }
     
     .ret-highlight {
         font-weight: 800;
-        font-size: 12px;
+        font-size: 11px;
         background: rgba(15, 23, 42, 0.45);
-        min-width: 65px;
+        min-width: 58px;
     }
 
     /* 🚀 最高衝刺漲幅樣式 */
     .max-highlight {
         font-weight: 800;
-        font-size: 12px;
+        font-size: 11px;
         background: rgba(30, 41, 59, 0.7);
-        min-width: 70px;
+        min-width: 62px;
     }
     .max-super {
-        color: #fbbf24 !important; /* 超過 +15% 金黃色耀眼 */
-        text-shadow: 0 0 6px rgba(251, 191, 36, 0.5);
+        color: #fbbf24 !important;
+        text-shadow: 0 0 4px rgba(251, 191, 36, 0.5);
     }
     .max-good {
-        color: #f87171 !important; /* 超過 +8% 紅字標記 */
+        color: #f87171 !important;
     }
 </style>
 </head>
@@ -362,34 +373,51 @@
     </div>
 </div>
 
-<!-- 戰情卡範圍標題列 -->
 <div class="strat-scope-header">
     <span class="strat-scope-title" id="stratScopeTitle">📅 當月績效總覽</span>
-    <div style="display:flex; gap:4px;">
-        <button class="scope-toggle-btn active" id="btnScopeMonth" onclick="setStatScope('month')">按當月統計</button>
-        <button class="scope-toggle-btn" id="btnScopeAll" onclick="setStatScope('all')">全歷史總計</button>
+    <div style="display:flex; gap:3px;">
+        <button class="scope-toggle-btn active" id="btnScopeMonth" onclick="setStatScope('month')">按當月</button>
+        <button class="scope-toggle-btn" id="btnScopeAll" onclick="setStatScope('all')">全歷史</button>
     </div>
 </div>
 
-<!-- 📱 緊湊型統計列：加入「飆股達標率(>=8%)」與「平均最高衝刺」 -->
+<!-- 📱 緊湊型統計列（徹底防止中斷截字） -->
 <div class="overall-compact">
     <div class="mini-strat-card">
         <div class="mini-strat-title">👑 領頭 (LEADERS)</div>
         <div class="mini-strat-highlight" id="card-leaders-max">最高: --</div>
-        <div class="mini-strat-val" id="card-leaders-ret">--</div>
-        <div class="mini-strat-sub">達標 <b id="card-leaders-hit">--</b> | 滿期 <span id="card-leaders-cnt">--</span></div>
+        <div class="mini-stat-row">
+            <span id="card-leaders-ret">--</span>
+            <span id="card-leaders-wr" style="color:#38bdf8; font-size:9.5px;">--</span>
+        </div>
+        <div class="mini-strat-sub">
+            <span>達標 <b id="card-leaders-hit">--</b></span>
+            <span>滿期 <span id="card-leaders-cnt">--</span></span>
+        </div>
     </div>
     <div class="mini-strat-card">
         <div class="mini-strat-title">🚀 突破 (BREAKOUT)</div>
         <div class="mini-strat-highlight" id="card-breakout-max">最高: --</div>
-        <div class="mini-strat-val" id="card-breakout-ret">--</div>
-        <div class="mini-strat-sub">達標 <b id="card-breakout-hit">--</b> | 滿期 <span id="card-breakout-cnt">--</span></div>
+        <div class="mini-stat-row">
+            <span id="card-breakout-ret">--</span>
+            <span id="card-breakout-wr" style="color:#38bdf8; font-size:9.5px;">--</span>
+        </div>
+        <div class="mini-strat-sub">
+            <span>達標 <b id="card-breakout-hit">--</b></span>
+            <span>滿期 <span id="card-breakout-cnt">--</span></span>
+        </div>
     </div>
     <div class="mini-strat-card">
         <div class="mini-strat-title">⏳ 蓄勢 (READY)</div>
         <div class="mini-strat-highlight" id="card-ready-max">最高: --</div>
-        <div class="mini-strat-val" id="card-ready-ret">--</div>
-        <div class="mini-strat-sub">達標 <b id="card-ready-hit">--</b> | 滿期 <span id="card-ready-cnt">--</span></div>
+        <div class="mini-stat-row">
+            <span id="card-ready-ret">--</span>
+            <span id="card-ready-wr" style="color:#38bdf8; font-size:9.5px;">--</span>
+        </div>
+        <div class="mini-strat-sub">
+            <span>達標 <b id="card-ready-hit">--</b></span>
+            <span>滿期 <span id="card-ready-cnt">--</span></span>
+        </div>
     </div>
 </div>
 
@@ -420,14 +448,15 @@
     <button class="tab-pill" id="tab-btn-READY" onclick="switchCategory('READY')">蓄勢 (<span id="count-READY">0</span>)</button>
 </div>
 
+<!-- 精簡當日統計細條（單行不折行） -->
 <div class="day-stat-strip" id="dayInlineStat">
     <span>當日入選標的</span>
     <span>勝率: -- | 均報: --</span>
 </div>
 
 <div class="table-hint-row">
-    <span>💡 點「累計」或「最高衝刺」標題可排序</span>
-    <span>👉 表格可向右滑動</span>
+    <span>💡 點「累計」或「最高衝刺」可排序</span>
+    <span>👉 表格向右滑</span>
 </div>
 
 <div id="tableContainer"></div>
@@ -437,8 +466,8 @@ const RAW_DATA = {"2026-09-01": [{"date_str": "2026-09-01", "stock_id": "6727", 
 let currentCategory = 'ALL';
 let currentGrade = 'ALL';
 let currentDays = 20;
-let sortField = 'none'; // 'ret', 'max', 'none'
-let sortDirection = 'none'; // 'desc', 'asc', 'none'
+let sortField = 'none';
+let sortDirection = 'none';
 let statScope = 'month';
 
 function getAllSortedDates() {
@@ -577,7 +606,6 @@ function toggleSortField(field) {
     applyFilters();
 }
 
-// 🎯 全面計算：最高衝刺漲幅、衝破 +8% 達標率、最終滿期報酬
 function updateOverallMetrics() {
     const selectedMonth = document.getElementById('monthSelector').value;
     const titleEl = document.getElementById('stratScopeTitle');
@@ -611,7 +639,6 @@ function updateOverallMetrics() {
                     if (finalRet > 0) stratStats[r.stage].win++;
                     stratStats[r.stage].retSum += finalRet;
 
-                    // 計算期間最高漲幅
                     let subDays = r.daily_list.slice(0, currentDays);
                     let actualVals = subDays.map(x => x.cum_pct).filter(v => v !== null);
                     let maxP = actualVals.length > 0 ? Math.max(...actualVals) : 0.0;
@@ -631,13 +658,14 @@ function updateOverallMetrics() {
         const maxEl = document.getElementById(`card-${lowerKey}-max`);
         const hitEl = document.getElementById(`card-${lowerKey}-hit`);
         const retEl = document.getElementById(`card-${lowerKey}-ret`);
+        const wrEl = document.getElementById(`card-${lowerKey}-wr`);
 
         if (data.count === 0) {
             cntEl.innerText = '0檔';
             maxEl.innerText = '最高: --';
             hitEl.innerText = '--';
             retEl.innerText = '--';
-            retEl.className = 'mini-strat-val c-gray';
+            wrEl.innerText = '';
         } else {
             const wr = (data.win / data.count * 100).toFixed(1);
             const hitRate = (data.hit8Count / data.count * 100).toFixed(1);
@@ -647,9 +675,10 @@ function updateOverallMetrics() {
             
             cntEl.innerText = `${data.count}檔`;
             maxEl.innerText = `均最高 +${avgMax}%`;
-            hitEl.innerText = `${hitRate}%`; // 達標率 (>=8%)
-            retEl.innerText = `收盤 ${sign}${avgRet}% (勝${wr}%)`;
-            retEl.className = `mini-strat-val ${avgRet >= 0 ? 'c-red' : 'c-green'}`;
+            hitEl.innerText = `${hitRate}%`;
+            retEl.innerText = `${sign}${avgRet}%`;
+            retEl.className = avgRet >= 0 ? 'c-red' : 'c-green';
+            wrEl.innerText = `勝${wr}%`;
         }
     });
 }
@@ -706,7 +735,6 @@ function applyFilters() {
             if (r._calcRet > 0) winCount++;
             totalRetSum += r._calcRet;
 
-            // 計算此股票期間最高漲幅與最高點發生在第幾天
             let highestVal = -999.0;
             let highestDay = 1;
             actual.forEach(dItem => {
@@ -725,7 +753,6 @@ function applyFilters() {
         }
     });
 
-    // 多欄位排序支援（可排累計報酬，也可排最高衝刺）
     if (sortField !== 'none' && sortDirection !== 'none') {
         filteredList.sort((a, b) => {
             const valA = sortField === 'max' ? a._maxRet : a._calcRet;
@@ -736,23 +763,22 @@ function applyFilters() {
         });
     }
     
-    const wr = validSampleCount > 0 ? (winCount / validSampleCount * 100).toFixed(1) : '0.0';
     const hitRate = validSampleCount > 0 ? (hit8Count / validSampleCount * 100).toFixed(1) : '0.0';
     const avgRet = validSampleCount > 0 ? (totalRetSum / validSampleCount).toFixed(2) : '0.00';
     const sign = avgRet >= 0 ? '+' : '';
     const retColor = avgRet >= 0 ? '#f87171' : '#4ade80';
 
-    const statusNote = (maxDaysAvailable < currentDays && maxDaysAvailable > 0) 
-        ? ` <span style="color:#f59e0b; font-size:10px;">(累計至第${maxDaysAvailable}天)</span>` 
+    const dayTag = (maxDaysAvailable < currentDays && maxDaysAvailable > 0) 
+        ? ` <span style="color:#f59e0b;">(D${maxDaysAvailable})</span>` 
         : '';
 
     document.getElementById('dayInlineStat').innerHTML = `
-        <span>📅 <b>${selectedDate}</b> (<b>${validSampleCount}</b>檔)${statusNote}</span>
-        <span>達標率(>=8%): <b style="color:#fbbf24;">${hitRate}%</b> | 收盤均報: <b style="color:${retColor};">${validSampleCount > 0 ? (sign + avgRet + '%') : '--'}</b></span>
+        <span>📅 <b>${selectedDate}</b> (<b>${validSampleCount}</b>檔)${dayTag}</span>
+        <span>達標: <b style="color:#fbbf24;">${hitRate}%</b> | 均報: <b style="color:${retColor};">${validSampleCount > 0 ? (sign + avgRet + '%') : '--'}</b></span>
     `;
 
     if (totalCount === 0) {
-        document.getElementById('tableContainer').innerHTML = `<div class="table-wrapper"><table style="width:100%;"><tr><td style="color:#64748b; padding:25px; text-align:center;">此條件無任何入選股票</td></tr></table></div>`;
+        document.getElementById('tableContainer').innerHTML = `<div class="table-wrapper"><table style="width:100%;"><tr><td style="color:#64748b; padding:20px; text-align:center;">此條件無任何入選股票</td></tr></table></div>`;
         return;
     }
 
@@ -765,8 +791,8 @@ function applyFilters() {
         <th>分級</th>
         <th>進場</th>
         <th>停損</th>
-        <th class="sortable" onclick="toggleSortField('max')" title="點擊切換最高衝刺排序">最高衝刺 ${maxIcon}</th>
-        <th class="sortable" onclick="toggleSortField('ret')" title="點擊切換累計報酬排序">${currentDays}天累計 ${retIcon}</th>`;
+        <th class="sortable" onclick="toggleSortField('max')">最高衝刺 ${maxIcon}</th>
+        <th class="sortable" onclick="toggleSortField('ret')">${currentDays}天累計 ${retIcon}</th>`;
         
     for (let d = 1; d <= currentDays; d++) {
         html += `<th>第${d}天</th>`;
@@ -785,7 +811,6 @@ function applyFilters() {
             retCellContent = `${signRet}${curTotalRet}%`;
         }
 
-        // 🚀 最高衝刺欄位呈現
         let maxCellContent = '--';
         let maxCls = 'c-gray';
         if (r._maxRet !== null) {
@@ -799,7 +824,7 @@ function applyFilters() {
             } else {
                 maxCls = 'c-green';
             }
-            maxCellContent = `${signMax}${r._maxRet}% <span style="font-size:9px; font-weight:normal; color:#94a3b8;">(D${r._maxDay})</span>`;
+            maxCellContent = `${signMax}${r._maxRet}% <span style="font-size:8px; font-weight:normal; color:#94a3b8;">(D${r._maxDay})</span>`;
         }
 
         const gradeCls = r.grade === 'A' ? 'badge-grade-a' : (r.grade === 'B' ? 'badge-grade-b' : 'badge-grade-c');
