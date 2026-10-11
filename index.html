@@ -110,6 +110,37 @@
     }
     .ctrl-row::-webkit-scrollbar { display: none; }
     
+    /* 🔍 即時搜尋框樣式 */
+    .search-box-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+        flex: 1;
+        min-width: 130px;
+    }
+    .search-input {
+        background: #1e293b;
+        border: 1px solid #3b82f6;
+        color: #f8fafc;
+        padding: 4px 22px 4px 8px;
+        border-radius: 5px;
+        font-size: 11px;
+        width: 100%;
+        outline: none;
+    }
+    .search-input::placeholder {
+        color: #64748b;
+    }
+    .search-clear-btn {
+        position: absolute;
+        right: 6px;
+        color: #94a3b8;
+        cursor: pointer;
+        font-size: 11px;
+        user-select: none;
+        display: none;
+    }
+
     .date-nav-group {
         display: flex;
         align-items: center;
@@ -467,6 +498,7 @@
 </div>
 
 <div class="controls-wrapper">
+    <!-- 第一排：日期跳轉與天數 -->
     <div class="ctrl-row">
         <select id="monthSelector" class="month-select" onchange="onMonthChange()"></select>
         <div class="date-nav-group">
@@ -478,7 +510,13 @@
         <button class="pill-btn active-days" id="btn-days-20" onclick="setHoldingDays(20)">20天</button>
         <button class="pill-btn" id="btn-days-30" onclick="setHoldingDays(30)">30天</button>
     </div>
+
+    <!-- 第二排：🔍 即時搜尋框 與 評分按鈕 -->
     <div class="ctrl-row">
+        <div class="search-box-wrapper">
+            <input type="text" id="stockSearchInput" class="search-input" placeholder="🔍 搜尋代號或名稱..." oninput="onSearchInput()">
+            <span id="searchClearBtn" class="search-clear-btn" onclick="clearSearch()">✕</span>
+        </div>
         <button class="pill-btn active-grade" id="btn-grade-ALL" onclick="setGradeFilter('ALL')">全部評分</button>
         <button class="pill-btn" id="btn-grade-A" onclick="setGradeFilter('A')">🏆 A級</button>
         <button class="pill-btn" id="btn-grade-B" onclick="setGradeFilter('B')">⭐ B級</button>
@@ -510,6 +548,7 @@ const RAW_DATA = {"2026-09-01": [{"date_str": "2026-09-01", "stock_id": "6727", 
 let currentCategory = 'ALL';
 let currentGrade = 'ALL';
 let currentDays = 20;
+let searchQuery = '';
 let sortField = 'none';
 let sortDirection = 'none';
 let statScope = 'month';
@@ -557,6 +596,26 @@ function onMonthChange() {
     });
 
     updateNavArrowState();
+    applyFilters();
+}
+
+// 🔍 搜尋事件處理
+function onSearchInput() {
+    const val = document.getElementById('stockSearchInput').value.trim();
+    searchQuery = val.toLowerCase();
+    const clearBtn = document.getElementById('searchClearBtn');
+    if (clearBtn) {
+        clearBtn.style.display = searchQuery ? 'block' : 'none';
+    }
+    applyFilters();
+}
+
+function clearSearch() {
+    const input = document.getElementById('stockSearchInput');
+    input.value = '';
+    searchQuery = '';
+    const clearBtn = document.getElementById('searchClearBtn');
+    if (clearBtn) clearBtn.style.display = 'none';
     applyFilters();
 }
 
@@ -675,9 +734,8 @@ function updateOverallMetrics() {
 
         const dayList = RAW_DATA[d] || [];
         dayList.forEach(r => {
-            if (!r.has_entered) return; // 僅統計期間內有觸發進場者
+            if (!r.has_entered) return;
 
-            // 確保有走滿目前天期
             const targetDayObj = r.daily_list[currentDays - 1];
             if (targetDayObj && targetDayObj.close !== null) {
                 let subDays = r.daily_list.slice(0, currentDays);
@@ -740,12 +798,18 @@ function applyFilters() {
 
     const dayRecords = RAW_DATA[selectedDate] || [];
     
+    // 依評分過濾
     const baseListForCounts = currentGrade === 'ALL' 
         ? dayRecords 
         : dayRecords.filter(r => r.grade === currentGrade);
 
-    const counts = { 'ALL': baseListForCounts.length, 'BREAKOUT': 0, 'READY': 0, 'LEADERS': 0 };
-    baseListForCounts.forEach(r => {
+    // 依搜尋條件過濾
+    const searchFilteredForCounts = searchQuery 
+        ? baseListForCounts.filter(r => (r.stock_id.toLowerCase().includes(searchQuery) || r.name.toLowerCase().includes(searchQuery)))
+        : baseListForCounts;
+
+    const counts = { 'ALL': searchFilteredForCounts.length, 'BREAKOUT': 0, 'READY': 0, 'LEADERS': 0 };
+    searchFilteredForCounts.forEach(r => {
         if (counts[r.stage] !== undefined) counts[r.stage]++;
     });
     
@@ -754,12 +818,9 @@ function applyFilters() {
     document.getElementById('count-BREAKOUT').innerText = counts['BREAKOUT'];
     document.getElementById('count-READY').innerText = counts['READY'];
 
-    let filteredList = [...dayRecords];
+    let filteredList = [...searchFilteredForCounts];
     if (currentCategory !== 'ALL') {
         filteredList = filteredList.filter(r => r.stage === currentCategory);
-    }
-    if (currentGrade !== 'ALL') {
-        filteredList = filteredList.filter(r => r.grade === currentGrade);
     }
 
     const totalCount = filteredList.length;
@@ -776,7 +837,6 @@ function applyFilters() {
             maxDaysAvailable = actual.length;
         }
         
-        // 只有有觸發進場的標的，才計算累積報酬與最高衝刺
         if (r.has_entered) {
             let cumActual = subDays.filter(x => x.cum_pct !== null);
             if (cumActual.length > 0) {
@@ -832,7 +892,7 @@ function applyFilters() {
     `;
 
     if (totalCount === 0) {
-        document.getElementById('tableContainer').innerHTML = `<div class="table-wrapper"><table style="width:100%;"><tr><td style="color:#64748b; padding:20px; text-align:center;">此條件無任何入選股票</td></tr></table></div>`;
+        document.getElementById('tableContainer').innerHTML = `<div class="table-wrapper"><table style="width:100%;"><tr><td style="color:#64748b; padding:20px; text-align:center;">此搜尋條件無任何符合股票</td></tr></table></div>`;
         return;
     }
 
@@ -936,7 +996,6 @@ function applyFilters() {
             if (dInfo.close === null) {
                 html += `<td><div class="cell-box"><span class="date-label">--</span><span class="c-gray">--</span></div></td>`;
             } else if (dInfo.state === 'waiting') {
-                // 尚未達到進場點，淡化顯示該天收盤價，標註觀察
                 html += `<td>
                     <div class="cell-box waiting-box">
                         <span class="date-label">${dInfo.date}</span>
