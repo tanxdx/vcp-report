@@ -84,7 +84,6 @@
         box-shadow: 0 0 8px var(--gold-glow);
     }
 
-    /* 📱 緊湊型統計列（包含風暴比與夏普率） */
     .overall-compact {
         display: flex;
         gap: 6px;
@@ -116,7 +115,6 @@
         margin: 1px 0;
     }
     
-    /* 🎯 風暴比與夏普率專屬排版列 */
     .mini-strat-quant {
         font-size: 8.5px;
         color: #e2d9f3;
@@ -612,7 +610,7 @@
     </div>
 </div>
 
-<!-- 📱 緊湊型統計列（加入風暴比與夏普率） -->
+<!-- 📱 緊湊型統計列（主要數字切換為「總累積績效」） -->
 <div class="overall-compact">
     <div class="mini-strat-card">
         <div class="mini-strat-title">👑 領頭 (LEADERS)</div>
@@ -621,7 +619,6 @@
             <span id="card-leaders-ret">--</span>
             <span id="card-leaders-wr" style="color:var(--accent-gold); font-size:9.5px;">--</span>
         </div>
-        <!-- 🎯 量化風暴比與夏普率 -->
         <div class="mini-strat-quant">
             <span>風暴比 <b id="card-leaders-plr">--</b></span>
             <span>夏普 <b id="card-leaders-sr">--</b></span>
@@ -907,7 +904,7 @@ function toggleSortField(field) {
     applyFilters();
 }
 
-// 🎯 計算各策略總覽（包含風暴比與夏普率）
+// 🎯 計算各策略總覽：以「總累積績效」為主力核心呈現
 function updateOverallMetrics() {
     const selectedMonth = document.getElementById('monthSelector').value;
     const titleEl = document.getElementById('stratScopeTitle');
@@ -915,9 +912,9 @@ function updateOverallMetrics() {
     if (statScope === 'month') {
         const mParts = selectedMonth.split('-');
         const monthTxt = mParts.length === 2 ? `${parseInt(mParts[1])} 月份` : selectedMonth;
-        titleEl.innerText = `📅 【${monthTxt}】各策略績效 (${currentDays}天期)`;
+        titleEl.innerText = `📅 【${monthTxt}】各策略累積績效 (${currentDays}天期)`;
     } else {
-        titleEl.innerText = `🏆 【全歷史總計】各策略績效 (${currentDays}天期)`;
+        titleEl.innerText = `🏆 【全歷史總計】各策略累積績效 (${currentDays}天期)`;
     }
 
     const stratStats = {
@@ -982,13 +979,14 @@ function updateOverallMetrics() {
             const wr = (winTrades.length / totalTrades * 100).toFixed(1);
             const hitRate = (data.hit8Count / totalTrades * 100).toFixed(1);
             
-            // 平均報酬
+            // 🎯 總累積績效（Sum of all returns）與 平均每檔績效
             const totalRetSum = data.returns.reduce((a, b) => a + b, 0);
             const avgRet = (totalRetSum / totalTrades);
             const avgMax = (data.maxRetSum / totalTrades).toFixed(1);
-            const sign = avgRet >= 0 ? '+' : '';
+            const cumSign = totalRetSum >= 0 ? '+' : '';
+            const avgSign = avgRet >= 0 ? '+' : '';
 
-            // 🎯 風暴比（盈虧比）計算：平均獲利 / 平均虧損絕對值
+            // 風暴比（盈虧比）計算
             let profitLossRatioStr = '--';
             if (winTrades.length > 0 && lossTrades.length > 0) {
                 const avgWin = winTrades.reduce((a, b) => a + b, 0) / winTrades.length;
@@ -997,16 +995,16 @@ function updateOverallMetrics() {
                     profitLossRatioStr = (avgWin / avgLoss).toFixed(2);
                 }
             } else if (winTrades.length > 0 && lossTrades.length === 0) {
-                profitLossRatioStr = '∞'; // 全勝
+                profitLossRatioStr = '∞';
             }
 
-            // 🎯 夏普值（Sharpe Ratio）計算：(平均報酬 - 無風險利率) / 標準差
+            // 夏普值計算
             let sharpeRatioStr = '--';
             if (totalTrades > 1) {
                 const mean = avgRet;
                 const variance = data.returns.reduce((sum, r) => sum + Math.pow(r - mean, 2), 0) / (totalTrades - 1);
                 const stdDev = Math.sqrt(variance);
-                const rf = 0.1; // 無風險利率基準
+                const rf = 0.1;
                 if (stdDev > 0) {
                     sharpeRatioStr = ((mean - rf) / stdDev).toFixed(2);
                 }
@@ -1015,9 +1013,11 @@ function updateOverallMetrics() {
             cntEl.innerText = `${totalTrades}檔`;
             maxEl.innerText = `均最高 +${avgMax}%`;
             hitEl.innerText = `${hitRate}%`;
-            retEl.innerText = `${sign}${avgRet.toFixed(2)}%`;
-            retEl.className = avgRet >= 0 ? 'c-red' : 'c-green';
-            wrEl.innerText = `勝${wr}%`;
+            
+            // 🎯 核心更換：顯示「累積 +XXX%」，右側附帶平均每筆
+            retEl.innerText = `累積 ${cumSign}${totalRetSum.toFixed(1)}%`;
+            retEl.className = totalRetSum >= 0 ? 'c-red' : 'c-green';
+            wrEl.innerText = `均${avgSign}${avgRet.toFixed(1)}% (勝${wr}%)`;
             plrEl.innerText = profitLossRatioStr;
             srEl.innerText = sharpeRatioStr;
         }
@@ -1125,19 +1125,19 @@ function applyFilters() {
     
     const hitRate = validSampleCount > 0 ? (hit8Count / validSampleCount * 100).toFixed(1) : '0.0';
     const avgRet = validSampleCount > 0 ? (totalRetSum / validSampleCount).toFixed(2) : '0.00';
-    const sign = avgRet >= 0 ? '+' : '';
-    const retColor = avgRet >= 0 ? '#f87171' : '#34d399';
+    const sign = totalRetSum >= 0 ? '+' : '';
+    const retColor = totalRetSum >= 0 ? '#f87171' : '#34d399';
 
     if (isGlobalSearch) {
         document.getElementById('dayInlineStat').innerHTML = `
             <span>🔍 跨全歷史搜尋: 「<b>${searchQuery}</b>」 (共 <b>${totalCount}</b> 筆入選紀錄)</span>
-            <span>已觸發: <b>${validSampleCount}</b> 檔 | 均報: <b style="color:${retColor};">${validSampleCount > 0 ? (sign + avgRet + '%') : '--'}</b></span>
+            <span>已觸發: <b>${validSampleCount}</b> 檔 | 總累積: <b style="color:${retColor};">${validSampleCount > 0 ? (sign + totalRetSum.toFixed(1) + '%') : '--'}</b> (均${avgRet}%)</span>
         `;
     } else {
         const dayTag = maxDaysAvailable > 0 ? ` (D${maxDaysAvailable})` : '';
         document.getElementById('dayInlineStat').innerHTML = `
             <span>📅 <b>${selectedDate}</b> (<b>${validSampleCount}</b>/${totalCount}檔已觸發)${dayTag}</span>
-            <span>達標: <b style="color:var(--accent-gold);">${hitRate}%</b> | 均報: <b style="color:${retColor};">${validSampleCount > 0 ? (sign + avgRet + '%') : '--'}</b></span>
+            <span>達標: <b style="color:var(--accent-gold);">${hitRate}%</b> | 總累積: <b style="color:${retColor};">${validSampleCount > 0 ? (sign + totalRetSum.toFixed(1) + '%') : '--'}</b></span>
         `;
     }
 
