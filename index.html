@@ -110,13 +110,12 @@
     }
     .ctrl-row::-webkit-scrollbar { display: none; }
     
-    /* 🔍 即時搜尋框樣式 */
     .search-box-wrapper {
         position: relative;
         display: flex;
         align-items: center;
         flex: 1;
-        min-width: 130px;
+        min-width: 140px;
     }
     .search-input {
         background: #1e293b;
@@ -307,7 +306,7 @@
         left: 0px;
         background: #111a33 !important;
         z-index: 5;
-        min-width: 78px;
+        min-width: 82px;
         box-shadow: 1px 0 4px rgba(0,0,0,0.35);
         padding: 4px 2px;
     }
@@ -322,13 +321,27 @@
     .stock-id-txt { font-size: 12px; font-weight: 800; color: #f8fafc; line-height: 1.1; }
     .stock-name-txt { font-size: 10.5px; color: #94a3b8; line-height: 1.1; }
     
+    /* 📅 入選日期徽章樣式 */
+    .date-badge-box {
+        background: #0f172a;
+        color: #38bdf8;
+        font-size: 8.5px;
+        font-weight: 700;
+        padding: 1px 4px;
+        border-radius: 3px;
+        border: 1px solid #38bdf8;
+        margin-bottom: 2px;
+        cursor: pointer;
+        user-select: none;
+    }
+
     .bonus-box {
         display: flex;
         flex-wrap: wrap;
         justify-content: center;
         gap: 2px;
         margin-top: 2px;
-        max-width: 76px;
+        max-width: 80px;
     }
     .bonus-tag {
         display: inline-block;
@@ -498,7 +511,7 @@
 </div>
 
 <div class="controls-wrapper">
-    <!-- 第一排：日期跳轉與天數 -->
+    <!-- 第一排：日期選擇與天數切換 -->
     <div class="ctrl-row">
         <select id="monthSelector" class="month-select" onchange="onMonthChange()"></select>
         <div class="date-nav-group">
@@ -511,10 +524,10 @@
         <button class="pill-btn" id="btn-days-30" onclick="setHoldingDays(30)">30天</button>
     </div>
 
-    <!-- 第二排：🔍 即時搜尋框 與 評分按鈕 -->
+    <!-- 第二排：🔍 全歷史即時搜尋框 與 評分按鈕 -->
     <div class="ctrl-row">
         <div class="search-box-wrapper">
-            <input type="text" id="stockSearchInput" class="search-input" placeholder="🔍 搜尋代號或名稱..." oninput="onSearchInput()">
+            <input type="text" id="stockSearchInput" class="search-input" placeholder="🔍 跨全歷史搜尋代號/名稱..." oninput="onSearchInput()">
             <span id="searchClearBtn" class="search-clear-btn" onclick="clearSearch()">✕</span>
         </div>
         <button class="pill-btn active-grade" id="btn-grade-ALL" onclick="setGradeFilter('ALL')">全部評分</button>
@@ -599,7 +612,7 @@ function onMonthChange() {
     applyFilters();
 }
 
-// 🔍 搜尋事件處理
+// 🔍 搜尋輸入監聽
 function onSearchInput() {
     const val = document.getElementById('stockSearchInput').value.trim();
     searchQuery = val.toLowerCase();
@@ -617,6 +630,18 @@ function clearSearch() {
     const clearBtn = document.getElementById('searchClearBtn');
     if (clearBtn) clearBtn.style.display = 'none';
     applyFilters();
+}
+
+// 快速點擊跳轉到該入選日
+function jumpToDate(targetDate) {
+    const targetMonth = targetDate.substring(0, 7);
+    const monthSelector = document.getElementById('monthSelector');
+    if (monthSelector.value !== targetMonth) {
+        monthSelector.value = targetMonth;
+        onMonthChange();
+    }
+    document.getElementById('daySelector').value = targetDate;
+    clearSearch();
 }
 
 function setStatScope(scope) {
@@ -796,20 +821,31 @@ function applyFilters() {
     const selectedDate = document.getElementById('daySelector').value;
     if (!selectedDate) return;
 
-    const dayRecords = RAW_DATA[selectedDate] || [];
-    
+    let sourceRecords = [];
+    const isGlobalSearch = Boolean(searchQuery);
+
+    // 🎯 關鍵改動：若有輸入搜尋，自動跨「所有日期」抓出符合的紀錄！
+    if (isGlobalSearch) {
+        const allSortedDates = getAllSortedDates();
+        allSortedDates.forEach(d => {
+            const list = RAW_DATA[d] || [];
+            list.forEach(r => {
+                if (r.stock_id.toLowerCase().includes(searchQuery) || r.name.toLowerCase().includes(searchQuery)) {
+                    sourceRecords.push(r);
+                }
+            });
+        });
+    } else {
+        sourceRecords = RAW_DATA[selectedDate] || [];
+    }
+
     // 依評分過濾
     const baseListForCounts = currentGrade === 'ALL' 
-        ? dayRecords 
-        : dayRecords.filter(r => r.grade === currentGrade);
+        ? sourceRecords 
+        : sourceRecords.filter(r => r.grade === currentGrade);
 
-    // 依搜尋條件過濾
-    const searchFilteredForCounts = searchQuery 
-        ? baseListForCounts.filter(r => (r.stock_id.toLowerCase().includes(searchQuery) || r.name.toLowerCase().includes(searchQuery)))
-        : baseListForCounts;
-
-    const counts = { 'ALL': searchFilteredForCounts.length, 'BREAKOUT': 0, 'READY': 0, 'LEADERS': 0 };
-    searchFilteredForCounts.forEach(r => {
+    const counts = { 'ALL': baseListForCounts.length, 'BREAKOUT': 0, 'READY': 0, 'LEADERS': 0 };
+    baseListForCounts.forEach(r => {
         if (counts[r.stage] !== undefined) counts[r.stage]++;
     });
     
@@ -818,7 +854,7 @@ function applyFilters() {
     document.getElementById('count-BREAKOUT').innerText = counts['BREAKOUT'];
     document.getElementById('count-READY').innerText = counts['READY'];
 
-    let filteredList = [...searchFilteredForCounts];
+    let filteredList = [...baseListForCounts];
     if (currentCategory !== 'ALL') {
         filteredList = filteredList.filter(r => r.stage === currentCategory);
     }
@@ -884,15 +920,21 @@ function applyFilters() {
     const sign = avgRet >= 0 ? '+' : '';
     const retColor = avgRet >= 0 ? '#f87171' : '#4ade80';
 
-    const dayTag = maxDaysAvailable > 0 ? ` (D${maxDaysAvailable})` : '';
-
-    document.getElementById('dayInlineStat').innerHTML = `
-        <span>📅 <b>${selectedDate}</b> (<b>${validSampleCount}</b>/${totalCount}檔已觸發)${dayTag}</span>
-        <span>達標: <b style="color:#fbbf24;">${hitRate}%</b> | 均報: <b style="color:${retColor};">${validSampleCount > 0 ? (sign + avgRet + '%') : '--'}</b></span>
-    `;
+    if (isGlobalSearch) {
+        document.getElementById('dayInlineStat').innerHTML = `
+            <span>🔍 跨全歷史搜尋: 「<b>${searchQuery}</b>」 (共 <b>${totalCount}</b> 筆入選紀錄)</span>
+            <span>已觸發: <b>${validSampleCount}</b> 檔 | 均報: <b style="color:${retColor};">${validSampleCount > 0 ? (sign + avgRet + '%') : '--'}</b></span>
+        `;
+    } else {
+        const dayTag = maxDaysAvailable > 0 ? ` (D${maxDaysAvailable})` : '';
+        document.getElementById('dayInlineStat').innerHTML = `
+            <span>📅 <b>${selectedDate}</b> (<b>${validSampleCount}</b>/${totalCount}檔已觸發)${dayTag}</span>
+            <span>達標: <b style="color:#fbbf24;">${hitRate}%</b> | 均報: <b style="color:${retColor};">${validSampleCount > 0 ? (sign + avgRet + '%') : '--'}</b></span>
+        `;
+    }
 
     if (totalCount === 0) {
-        document.getElementById('tableContainer').innerHTML = `<div class="table-wrapper"><table style="width:100%;"><tr><td style="color:#64748b; padding:20px; text-align:center;">此搜尋條件無任何符合股票</td></tr></table></div>`;
+        document.getElementById('tableContainer').innerHTML = `<div class="table-wrapper"><table style="width:100%;"><tr><td style="color:#64748b; padding:25px; text-align:center;">${isGlobalSearch ? `全歷史未找到符合「${searchQuery}」的股票紀錄` : '此日期與條件無任何入選股票'}</td></tr></table></div>`;
         return;
     }
 
@@ -900,7 +942,7 @@ function applyFilters() {
     let maxIcon = (sortField === 'max') ? (sortDirection === 'desc' ? '⬇️' : '⬆️') : '⬍';
 
     let html = `<div class="table-wrapper"><table><thead><tr>
-        <th class="sticky-stock">標的</th>
+        <th class="sticky-stock">標的 / 入選日</th>
         <th>評分</th>
         <th>分級</th>
         <th>樞紐進場點</th>
@@ -976,10 +1018,14 @@ function applyFilters() {
                 </div>
             `;
         }
+
+        // 📅 入選日顯示：在搜尋狀態下明確顯示，點擊可直接跳至該日
+        const dateTagHtml = `<div class="date-badge-box" onclick="jumpToDate('${r.date_str}')" title="點擊跳轉至該交易日">📅 ${r.date_str.substring(5)}</div>`;
         
         html += `<tr>
             <td class="sticky-stock">
                 <div class="stock-combo">
+                    ${dateTagHtml}
                     <span class="stock-id-txt">${r.stock_id}</span>
                     <span class="stock-name-txt">${r.name}</span>
                     ${bonusHtml}
