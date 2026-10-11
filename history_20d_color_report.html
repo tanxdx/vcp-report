@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>VCP 選股 走勢追蹤戰情室</title>
+<title>趙阿瑋要賺爆了</title>
 <style>
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body {
@@ -19,8 +19,10 @@
         justify-content: space-between;
         align-items: center;
         margin-bottom: 5px;
+        flex-wrap: wrap;
+        gap: 4px;
     }
-    h1 { margin: 0; font-size: 14px; font-weight: 800; display: flex; align-items: center; gap: 4px; }
+    h1 { margin: 0; font-size: 15px; font-weight: 900; display: flex; align-items: center; gap: 4px; color: #f8fafc; letter-spacing: 0.5px; }
     .legend-tag { font-size: 9px; color: #94a3b8; display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
 
     .strat-scope-header {
@@ -205,25 +207,16 @@
     .pill-btn.active-a { background: #16a34a !important; border-color: #22c55e !important; color: #fff !important; }
     .pill-btn.active-b { background: #2563eb !important; border-color: #3b82f6 !important; color: #fff !important; }
     .pill-btn.active-c { background: #d97706 !important; border-color: #f59e0b !important; color: #fff !important; }
-    
-    /* 👁️ 欄位顯示開關按鈕樣式 */
-    .pill-btn.col-toggle {
-        background: #1e293b;
-        border-color: #475569;
-        color: #94a3b8;
-    }
-    .pill-btn.col-toggle.active {
-        background: #0d9488 !important;
-        border-color: #14b8a6 !important;
-        color: #ffffff !important;
-    }
 
+    /* 🏷️ 分類頁籤與右側核取方塊組合容器 */
     .tabs-wrapper {
         display: flex;
-        gap: 4px;
+        align-items: center;
+        gap: 5px;
         margin-bottom: 5px;
         overflow-x: auto;
         scrollbar-width: none;
+        padding-bottom: 2px;
     }
     .tabs-wrapper::-webkit-scrollbar { display: none; }
     
@@ -243,6 +236,39 @@
         background: #2563eb;
         color: #fff;
         border-color: #3b82f6;
+    }
+    
+    /* ☑️ 緊湊型核取方塊樣式（置於蓄勢右側） */
+    .checkbox-control-group {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-left: 4px;
+        padding: 2px 6px;
+        background: #111a33;
+        border: 1px solid #1e293b;
+        border-radius: 5px;
+        flex-shrink: 0;
+    }
+    .custom-check-label {
+        display: flex;
+        align-items: center;
+        gap: 3px;
+        font-size: 10px;
+        color: #94a3b8;
+        cursor: pointer;
+        user-select: none;
+        white-space: nowrap;
+    }
+    .custom-check-label input[type="checkbox"] {
+        accent-color: #0284c7;
+        width: 12px;
+        height: 12px;
+        cursor: pointer;
+        margin: 0;
+    }
+    .custom-check-label:hover {
+        color: #38bdf8;
     }
     
     .day-stat-strip {
@@ -365,7 +391,6 @@
         line-height: 1.1;
     }
 
-    /* 🎯 評分與分級整併樣式 */
     .stage-grade-combo {
         display: flex;
         flex-direction: column;
@@ -502,10 +527,10 @@
 <body>
 
 <div class="header-area">
-    <h1>📈 VCP 走勢戰情室</h1>
+    <h1>🚀 趙阿瑋要賺爆了</h1>
     <div class="legend-tag">
         <span><span class="badge-entry-day">🎯進場(2張)</span></span>
-        <span><span class="badge-tp-10">💰+10%出一張</span></span>
+        <span><span class="badge-tp-10">💰+10%出1張</span></span>
         <span><span class="badge-tp-20">🎉+20%全出</span></span>
         <span><span class="badge-stop-15">🛑破-15%停損</span></span>
         <span><span class="badge-stop-7">🛑破-7%出餘單</span></span>
@@ -560,7 +585,6 @@
 </div>
 
 <div class="controls-wrapper">
-    <!-- 第一排：日期選擇、天數、欄位顯示開關 -->
     <div class="ctrl-row">
         <select id="monthSelector" class="month-select" onchange="onMonthChange()"></select>
         <div class="date-nav-group">
@@ -571,13 +595,8 @@
         <button class="pill-btn" id="btn-days-7" onclick="setHoldingDays(7)">7天</button>
         <button class="pill-btn active-days" id="btn-days-20" onclick="setHoldingDays(20)">20天</button>
         <button class="pill-btn" id="btn-days-30" onclick="setHoldingDays(30)">30天</button>
-        
-        <!-- 👁️ 欄位控制開關 -->
-        <button class="pill-btn col-toggle active" id="btnToggleStage" onclick="toggleColumn('stage')" title="切換顯示分級評分">👁️ 分級評分</button>
-        <button class="pill-btn col-toggle active" id="btnToggleStops" onclick="toggleColumn('stops')" title="切換顯示停損停利點">🎯 停損停利</button>
     </div>
 
-    <!-- 第二排：全歷史搜尋框 與 評分按鈕 -->
     <div class="ctrl-row">
         <div class="search-box-wrapper">
             <input type="text" id="stockSearchInput" class="search-input" placeholder="🔍 跨全歷史搜尋代號/名稱..." oninput="onSearchInput()">
@@ -590,11 +609,23 @@
     </div>
 </div>
 
+<!-- 🎯 分類頁籤列：在蓄勢右邊直接放置核取方塊（預設不打勾） -->
 <div class="tabs-wrapper">
     <button class="tab-pill active" id="tab-btn-ALL" onclick="switchCategory('ALL')">全部 (<span id="count-ALL">0</span>)</button>
     <button class="tab-pill" id="tab-btn-LEADERS" onclick="switchCategory('LEADERS')">領頭 (<span id="count-LEADERS">0</span>)</button>
     <button class="tab-pill" id="tab-btn-BREAKOUT" onclick="switchCategory('BREAKOUT')">突破 (<span id="count-BREAKOUT">0</span>)</button>
     <button class="tab-pill" id="tab-btn-READY" onclick="switchCategory('READY')">蓄勢 (<span id="count-READY">0</span>)</button>
+    
+    <div class="checkbox-control-group">
+        <label class="custom-check-label">
+            <input type="checkbox" id="chkShowStage" onchange="onCheckboxToggle()">
+            <span>分級評分</span>
+        </label>
+        <label class="custom-check-label">
+            <input type="checkbox" id="chkShowStops" onchange="onCheckboxToggle()">
+            <span>停損停利</span>
+        </label>
+    </div>
 </div>
 
 <div class="day-stat-strip" id="dayInlineStat">
@@ -619,18 +650,15 @@ let sortField = 'none';
 let sortDirection = 'none';
 let statScope = 'month';
 
-// 👁️ 欄位顯示開關狀態（預設皆開啟）
-let showStageCol = true;
-let showStopsCol = true;
+// 🎯 預設皆為關閉（不顯示）
+let showStageCol = false;
+let showStopsCol = false;
 
-function toggleColumn(colName) {
-    if (colName === 'stage') {
-        showStageCol = !showStageCol;
-        document.getElementById('btnToggleStage').classList.toggle('active', showStageCol);
-    } else if (colName === 'stops') {
-        showStopsCol = !showStopsCol;
-        document.getElementById('btnToggleStops').classList.toggle('active', showStopsCol);
-    }
+function onCheckboxToggle() {
+    const chkStage = document.getElementById('chkShowStage');
+    const chkStops = document.getElementById('chkShowStops');
+    showStageCol = chkStage ? chkStage.checked : false;
+    showStopsCol = chkStops ? chkStops.checked : false;
     applyFilters();
 }
 
@@ -1005,7 +1033,6 @@ function applyFilters() {
     let retIcon = (sortField === 'ret') ? (sortDirection === 'desc' ? '⬇️' : '⬆️') : '⬍';
     let maxIcon = (sortField === 'max') ? (sortDirection === 'desc' ? '⬇️' : '⬆️') : '⬍';
 
-    // 建立表頭，根據開關動態決定欄位
     let html = `<div class="table-wrapper"><table><thead><tr>
         <th class="sticky-stock">標的 / 入選日</th>`;
     
@@ -1109,7 +1136,6 @@ function applyFilters() {
                 </div>
             </td>`;
             
-        // 🎯 分級與評分整合同一欄
         if (showStageCol) {
             html += `<td>
                 <div class="stage-grade-combo">
@@ -1121,7 +1147,6 @@ function applyFilters() {
         
         html += `<td>${entryHtml}</td>`;
         
-        // 🎯 停損停利欄位
         if (showStopsCol) {
             html += `<td>${slTpHtml}</td>`;
         }
