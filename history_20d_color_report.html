@@ -7,7 +7,6 @@
 <style>
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     
-    /* 👑 莊爸風格：奢華深紫金調色系統 */
     :root {
         --bg-main: #0c0618;
         --card-bg: #150a28;
@@ -54,7 +53,6 @@
     }
     .legend-tag { font-size: 9px; color: var(--text-muted); display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
 
-    /* 戰情卡範圍標題列 */
     .strat-scope-header {
         display: flex;
         justify-content: space-between;
@@ -86,7 +84,7 @@
         box-shadow: 0 0 8px var(--gold-glow);
     }
 
-    /* 📱 緊湊型統計列 */
+    /* 📱 緊湊型統計列（包含風暴比與夏普率） */
     .overall-compact {
         display: flex;
         gap: 6px;
@@ -102,7 +100,7 @@
         border-radius: 6px;
         padding: 5px 7px;
         flex: 1;
-        min-width: 105px;
+        min-width: 110px;
         white-space: nowrap;
         box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
     }
@@ -117,6 +115,18 @@
         font-weight: 800;
         margin: 1px 0;
     }
+    
+    /* 🎯 風暴比與夏普率專屬排版列 */
+    .mini-strat-quant {
+        font-size: 8.5px;
+        color: #e2d9f3;
+        display: flex;
+        justify-content: space-between;
+        margin: 1px 0;
+        padding: 1px 0;
+    }
+    .mini-strat-quant b { color: var(--accent-gold); }
+
     .mini-strat-sub {
         font-size: 8.5px;
         color: var(--text-muted);
@@ -127,7 +137,6 @@
         margin-top: 2px;
     }
 
-    /* 控制列區塊 */
     .controls-wrapper {
         background: var(--card-bg);
         border: 1px solid var(--card-border);
@@ -260,7 +269,6 @@
     .pill-btn.active-b { background: #2563eb !important; border-color: #3b82f6 !important; color: #fff !important; }
     .pill-btn.active-c { background: #d97706 !important; border-color: #f59e0b !important; color: #fff !important; }
 
-    /* 🏷️ 分類頁籤列 */
     .tabs-wrapper {
         display: flex;
         align-items: center;
@@ -292,7 +300,6 @@
         box-shadow: 0 0 6px var(--gold-glow);
     }
     
-    /* ☑️ 核取方塊群組 */
     .checkbox-control-group {
         display: flex;
         align-items: center;
@@ -350,7 +357,6 @@
         padding: 0 1px;
     }
 
-    /* 表格本體 */
     .table-wrapper {
         width: 100%;
         overflow-x: auto;
@@ -502,7 +508,6 @@
     .bg-green { background: rgba(52, 211, 153, 0.2); color: #a7f3d0; }
     .bg-gray { background: #1a0b30; color: #72608a; }
     
-    /* 🎯 狀態徽章樣式 */
     .badge-entry-day {
         background: #0284c7 !important;
         color: #ffffff !important;
@@ -592,7 +597,7 @@
     <h1>🚀 趙阿瑋要賺爆了</h1>
     <div class="legend-tag">
         <span><span class="badge-entry-day">🎯進場(2張)</span></span>
-        <span><span class="badge-tp-10">💰+10%出一張</span></span>
+        <span><span class="badge-tp-10">💰+10%出1張</span></span>
         <span><span class="badge-tp-20">🎉+20%全出</span></span>
         <span><span class="badge-stop-15">🛑破-15%停損</span></span>
         <span><span class="badge-stop-7">🛑破-7%出餘單</span></span>
@@ -607,6 +612,7 @@
     </div>
 </div>
 
+<!-- 📱 緊湊型統計列（加入風暴比與夏普率） -->
 <div class="overall-compact">
     <div class="mini-strat-card">
         <div class="mini-strat-title">👑 領頭 (LEADERS)</div>
@@ -614,6 +620,11 @@
         <div class="mini-stat-row">
             <span id="card-leaders-ret">--</span>
             <span id="card-leaders-wr" style="color:var(--accent-gold); font-size:9.5px;">--</span>
+        </div>
+        <!-- 🎯 量化風暴比與夏普率 -->
+        <div class="mini-strat-quant">
+            <span>風暴比 <b id="card-leaders-plr">--</b></span>
+            <span>夏普 <b id="card-leaders-sr">--</b></span>
         </div>
         <div class="mini-strat-sub">
             <span>達標 <b id="card-leaders-hit">--</b></span>
@@ -627,6 +638,10 @@
             <span id="card-breakout-ret">--</span>
             <span id="card-breakout-wr" style="color:var(--accent-gold); font-size:9.5px;">--</span>
         </div>
+        <div class="mini-strat-quant">
+            <span>風暴比 <b id="card-breakout-plr">--</b></span>
+            <span>夏普 <b id="card-breakout-sr">--</b></span>
+        </div>
         <div class="mini-strat-sub">
             <span>達標 <b id="card-breakout-hit">--</b></span>
             <span>觸發滿期 <span id="card-breakout-cnt">--</span></span>
@@ -638,6 +653,10 @@
         <div class="mini-stat-row">
             <span id="card-ready-ret">--</span>
             <span id="card-ready-wr" style="color:var(--accent-gold); font-size:9.5px;">--</span>
+        </div>
+        <div class="mini-strat-quant">
+            <span>風暴比 <b id="card-ready-plr">--</b></span>
+            <span>夏普 <b id="card-ready-sr">--</b></span>
         </div>
         <div class="mini-strat-sub">
             <span>達標 <b id="card-ready-hit">--</b></span>
@@ -888,6 +907,7 @@ function toggleSortField(field) {
     applyFilters();
 }
 
+// 🎯 計算各策略總覽（包含風暴比與夏普率）
 function updateOverallMetrics() {
     const selectedMonth = document.getElementById('monthSelector').value;
     const titleEl = document.getElementById('stratScopeTitle');
@@ -901,9 +921,9 @@ function updateOverallMetrics() {
     }
 
     const stratStats = {
-        'LEADERS': { count: 0, win: 0, retSum: 0, hit8Count: 0, maxRetSum: 0 },
-        'BREAKOUT': { count: 0, win: 0, retSum: 0, hit8Count: 0, maxRetSum: 0 },
-        'READY': { count: 0, win: 0, retSum: 0, hit8Count: 0, maxRetSum: 0 }
+        'LEADERS': { returns: [], hit8Count: 0, maxRetSum: 0 },
+        'BREAKOUT': { returns: [], hit8Count: 0, maxRetSum: 0 },
+        'READY': { returns: [], hit8Count: 0, maxRetSum: 0 }
     };
 
     Object.keys(RAW_DATA).forEach(d => {
@@ -922,9 +942,7 @@ function updateOverallMetrics() {
 
                 if (actualVals.length > 0) {
                     const finalRet = actualVals[actualVals.length - 1];
-                    stratStats[r.stage].count++;
-                    if (finalRet > 0) stratStats[r.stage].win++;
-                    stratStats[r.stage].retSum += finalRet;
+                    stratStats[r.stage].returns.push(finalRet);
 
                     let maxP = Math.max(...actualVals);
                     stratStats[r.stage].maxRetSum += maxP;
@@ -944,26 +962,64 @@ function updateOverallMetrics() {
         const hitEl = document.getElementById(`card-${lowerKey}-hit`);
         const retEl = document.getElementById(`card-${lowerKey}-ret`);
         const wrEl = document.getElementById(`card-${lowerKey}-wr`);
+        const plrEl = document.getElementById(`card-${lowerKey}-plr`);
+        const srEl = document.getElementById(`card-${lowerKey}-sr`);
 
-        if (data.count === 0) {
+        const totalTrades = data.returns.length;
+
+        if (totalTrades === 0) {
             cntEl.innerText = '0檔';
             maxEl.innerText = '最高: --';
             hitEl.innerText = '--';
             retEl.innerText = '--';
             wrEl.innerText = '';
+            plrEl.innerText = '--';
+            srEl.innerText = '--';
         } else {
-            const wr = (data.win / data.count * 100).toFixed(1);
-            const hitRate = (data.hit8Count / data.count * 100).toFixed(1);
-            const avgRet = (data.retSum / data.count).toFixed(2);
-            const avgMax = (data.maxRetSum / data.count).toFixed(1);
-            const sign = avgRet >= 0 ? '+' : '';
+            const winTrades = data.returns.filter(r => r > 0);
+            const lossTrades = data.returns.filter(r => r <= 0);
+
+            const wr = (winTrades.length / totalTrades * 100).toFixed(1);
+            const hitRate = (data.hit8Count / totalTrades * 100).toFixed(1);
             
-            cntEl.innerText = `${data.count}檔`;
+            // 平均報酬
+            const totalRetSum = data.returns.reduce((a, b) => a + b, 0);
+            const avgRet = (totalRetSum / totalTrades);
+            const avgMax = (data.maxRetSum / totalTrades).toFixed(1);
+            const sign = avgRet >= 0 ? '+' : '';
+
+            // 🎯 風暴比（盈虧比）計算：平均獲利 / 平均虧損絕對值
+            let profitLossRatioStr = '--';
+            if (winTrades.length > 0 && lossTrades.length > 0) {
+                const avgWin = winTrades.reduce((a, b) => a + b, 0) / winTrades.length;
+                const avgLoss = Math.abs(lossTrades.reduce((a, b) => a + b, 0) / lossTrades.length);
+                if (avgLoss > 0) {
+                    profitLossRatioStr = (avgWin / avgLoss).toFixed(2);
+                }
+            } else if (winTrades.length > 0 && lossTrades.length === 0) {
+                profitLossRatioStr = '∞'; // 全勝
+            }
+
+            // 🎯 夏普值（Sharpe Ratio）計算：(平均報酬 - 無風險利率) / 標準差
+            let sharpeRatioStr = '--';
+            if (totalTrades > 1) {
+                const mean = avgRet;
+                const variance = data.returns.reduce((sum, r) => sum + Math.pow(r - mean, 2), 0) / (totalTrades - 1);
+                const stdDev = Math.sqrt(variance);
+                const rf = 0.1; // 無風險利率基準
+                if (stdDev > 0) {
+                    sharpeRatioStr = ((mean - rf) / stdDev).toFixed(2);
+                }
+            }
+
+            cntEl.innerText = `${totalTrades}檔`;
             maxEl.innerText = `均最高 +${avgMax}%`;
             hitEl.innerText = `${hitRate}%`;
-            retEl.innerText = `${sign}${avgRet}%`;
+            retEl.innerText = `${sign}${avgRet.toFixed(2)}%`;
             retEl.className = avgRet >= 0 ? 'c-red' : 'c-green';
             wrEl.innerText = `勝${wr}%`;
+            plrEl.innerText = profitLossRatioStr;
+            srEl.innerText = sharpeRatioStr;
         }
     });
 }
