@@ -6,7 +6,7 @@ import pandas as pd
 
 DOCS_HISTORY_DIR = Path("docs/history")
 PRICES_DIR = Path("data/prices")
-START_DATE = ""   # 起始日期自 9/1 起
+START_DATE = "2026-09-01"   # 起始日期自 9/1 起
 HOLDING_DAYS = 30           # 計算 30 天供動態切換
 
 price_cache = {}
