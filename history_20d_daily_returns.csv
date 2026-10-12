@@ -1,0 +1,250 @@
+﻿import json
+import glob
+from pathlib import Path
+import pandas as pd
+
+DOCS_HISTORY_DIR = Path("docs/history")
+PRICES_DIR = Path("data/prices")
+HOLDING_DAYS = 20  # 持有 20 個交易日
+
+# ANSI 終端機顏色碼（台股紅漲綠跌）
+COLOR_RED = "\033[91m"    # 漲
+COLOR_GREEN = "\033[92m"  # 跌
+COLOR_GRAY = "\033[90m"   # 平盤
+COLOR_RESET = "\033[0m"
+
+def get_stock_prices(stock_id: str):
+    """讀取 Parquet 日 K 並計算 10MA"""
+    candidates = [
+        PRICES_DIR / f"{stock_id}.parquet",
+        PRICES_DIR / f"{stock_id}.TW.parquet",
+        PRICES_DIR / f"{stock_id}.TWO.parquet",
+    ]
+    for p in candidates:
+        if p.exists():
+            try:
+                df = pd.read_parquet(p)
+                date_col = next((c for c in df.columns if str(c).lower() in ["date", "datetime", "time"]), None)
+                close_col = next((c for c in df.columns if str(c).lower() in ["close", "price"]), None)
+                
+                if date_col and close_col:
+                    df["date_str"] = pd.to_datetime(df[date_col]).dt.strftime("%Y-%m-%d")
+                    df["close_price"] = df[close_col].astype(float)
+                    df["ma10"] = df["close_price"].rolling(window=10).mean()
+                    return df.sort_values("date_str").reset_index(drop=True)
+            except Exception:
+                pass
+    return None
+
+def colorize_terminal(pct):
+    """終端機專用：漲紅跌綠"""
+    if pct is None:
+        return f"{COLOR_GRAY}  --  {COLOR_RESET}"
+    if pct > 0:
+        return f"{COLOR_RED}+{pct:5.1f}%{COLOR_RESET}"
+    elif pct < 0:
+        return f"{COLOR_GREEN}{pct:5.1f}%{COLOR_RESET}"
+    return f"{COLOR_GRAY} 0.0% {COLOR_RESET}"
+
+def analyze_20d_by_stage():
+    json_files = sorted(glob.glob(str(DOCS_HISTORY_DIR / "*.json")))
+    if not json_files:
+        print("未找到任何 history JSON 檔案！")
+        return
+
+    recent_files = json_files[-22:]
+    results = []
+
+    for file_path in recent_files:
+        with open(file_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        date_str = data.get("as_of", Path(file_path).stem)
+
+        for stage in ["BREAKOUT", "READY", "LEADERS"]:
+            for item in data.get(stage, []):
+                sid = str(item.get("stock_id") or item.get("symbol") or item.get("code") or item.get("sid") or "") if isinstance(item, dict) else str(item)
+                name = item.get("stock_name", item.get("name", "")) if isinstance(item, dict) else ""
+                if not sid:
+                    continue
+
+                df_price = get_stock_prices(sid)
+                if df_price is None or df_price.empty:
+                    continue
+
+                match = df_price[df_price["date_str"] == date_str]
+                if match.empty:
+                    continue
+
+                idx = match.index[0]
+                entry_price = df_price.loc[idx, "close_price"]
+
+                daily_list = []
+                break_ma10_day = None
+                last_close = entry_price
+
+                for d in range(1, HOLDING_DAYS + 1):
+                    curr_idx = idx + d
+                    if curr_idx < len(df_price):
+                        curr_row = df_price.loc[curr_idx]
+                        curr_date = curr_row["date_str"][5:]  # MM-DD
+                        curr_close = curr_row["close_price"]
+                        curr_ma10 = curr_row["ma10"]
+
+                        pct_change = round(((curr_close / last_close) - 1) * 100, 1)
+                        daily_list.append({"day": d, "date": curr_date, "pct": pct_change})
+
+                        if break_ma10_day is None and pd.notna(curr_ma10) and curr_close < curr_ma10:
+                            break_ma10_day = f"D{d}({curr_date})"
+
+                        last_close = curr_close
+                    else:
+                        daily_list.append({"day": d, "date": "--", "pct": None})
+
+                actual_trades = [x for x in daily_list if x["pct"] is not None]
+                if not actual_trades:
+                    continue
+
+                final_close = df_price.loc[idx + len(actual_trades), "close_price"]
+                total_ret = round(((final_close / entry_price) - 1) * 100, 2)
+
+                results.append({
+                    "date_str": date_str,
+                    "stock_id": sid,
+                    "name": name[:4],
+                    "stage": stage,
+                    "entry_price": entry_price,
+                    "daily_list": daily_list,
+                    "break_ma10": break_ma10_day if break_ma10_day else "未跌破",
+                    "total_ret": total_ret
+                })
+
+    if not results:
+        print("未比對到足夠的歷史價格數據！")
+        return
+
+    # 去重
+    unique_map = {"BREAKOUT": [], "READY": [], "LEADERS": []}
+    seen = set()
+    for r in results:
+        key = (r["stage"], r["date_str"], r["stock_id"])
+        if key not in seen:
+            seen.add(key)
+            unique_map[r["stage"]].append(r)
+
+    # 1. 終端機分組列印
+    for stage in ["BREAKOUT", "READY", "LEADERS"]:
+        stage_list = unique_map[stage]
+        print(f"\n{'='*45} 【{stage} 分類】 (共 {len(stage_list)} 筆) {'='*45}")
+        if not stage_list:
+            print("  此分類在此期間無樣本。")
+            continue
+
+        for r in stage_list[:6]:  # 終端機各印前 6 筆，完整表格看 HTML
+            days_str = " | ".join([f"{x['date']}:{colorize_terminal(x['pct'])}" for x in r["daily_list"][:8]])
+            tot_colored = colorize_terminal(r["total_ret"])
+            print(f"[{r['date_str']}] {r['stock_id']} {r['name']:4s} | 進場:{r['entry_price']:6.1f} | 總計:{tot_colored} | 破10MA:{r['break_ma10']}")
+            print(f"  前8日: {days_str}")
+            print("-" * 110)
+
+    # 2. 產出 HTML 獨立分頁表格
+    html_content = """
+    <!DOCTYPE html>
+    <html lang="zh-TW">
+    <head>
+    <meta charset="UTF-8">
+    <title>VCP 選股 20 天分級追蹤報表</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; padding: 25px; }
+        h1 { margin-bottom: 8px; font-size: 22px; }
+        .sub { color: #94a3b8; margin-bottom: 25px; font-size: 14px; }
+        .section-box { margin-bottom: 40px; background: #1e293b; border-radius: 10px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2); }
+        .stage-title { font-size: 18px; font-weight: bold; margin-bottom: 12px; padding-left: 10px; border-left: 4px solid #38bdf8; display: flex; justify-content: space-between; align-items: center; }
+        .badge { background: #334155; padding: 3px 8px; border-radius: 4px; font-size: 12px; color: #94a3b8; }
+        table { border-collapse: collapse; width: 100%; font-size: 12px; overflow-x: auto; display: block; }
+        th, td { padding: 8px 6px; text-align: center; border: 1px solid #334155; white-space: nowrap; }
+        th { background: #0f172a; color: #cbd5e1; font-weight: 600; }
+        .up { color: #f87171; font-weight: bold; background: rgba(239, 68, 68, 0.1); }
+        .down { color: #4ade80; font-weight: bold; background: rgba(34, 197, 94, 0.1); }
+        .neutral { color: #64748b; }
+        .break { color: #fbbf24; font-weight: 600; }
+        .date-label { font-size: 10px; color: #64748b; display: block; }
+    </style>
+    </head>
+    <body>
+    <h1>📈 VCP 選股：20 個交易日分級走勢追蹤 (紅漲 綠跌)</h1>
+    <div class="sub">依據 BREAKOUT（突破）、READY（緊湊蓄勢）、LEADERS（領頭羊）分開獨立檢視</div>
+    """
+
+    stage_descriptions = {
+        "BREAKOUT": "當日帶量突破樞紐點的發動個股",
+        "READY": "VCP 收縮完畢、籌碼沉澱蓄勢待發的名單",
+        "LEADERS": "產業強勢族群指標領頭羊"
+    }
+
+    for stage in ["BREAKOUT", "READY", "LEADERS"]:
+        items = unique_map[stage]
+        desc = stage_descriptions.get(stage, "")
+        html_content += f"""
+        <div class="section-box">
+            <div class="stage-title">
+                <div>🏷️ {stage} <span style="font-size:13px; color:#94a3b8; font-weight:normal; margin-left:8px;">({desc})</span></div>
+                <div class="badge">共 {len(items)} 筆</div>
+            </div>
+            <table>
+            <thead>
+                <tr>
+                    <th>選股日</th>
+                    <th>代號</th>
+                    <th>名稱</th>
+                    <th>進場價</th>
+        """
+        for d in range(1, HOLDING_DAYS + 1):
+            html_content += f"<th>第{d}天</th>"
+        html_content += "<th>首次破10MA</th><th>20日累積</th></tr></thead><tbody>"
+
+        if not items:
+            html_content += f"<tr><td colspan='{HOLDING_DAYS + 6}' style='color:#64748b; padding:20px;'>此分類在統計期間內無入選標的</td></tr>"
+        else:
+            for r in items:
+                tot_cls = "up" if r["total_ret"] > 0 else "down" if r["total_ret"] < 0 else "neutral"
+                html_content += f"""
+                <tr>
+                    <td>{r['date_str']}</td>
+                    <td><b>{r['stock_id']}</b></td>
+                    <td>{r['name']}</td>
+                    <td>{r['entry_price']}</td>
+                """
+                for d_info in r["daily_list"]:
+                    pct = d_info["pct"]
+                    d_date = d_info["date"]
+                    if pct is None:
+                        html_content += "<td><span class='date-label'>--</span><span class='neutral'>--</span></td>"
+                    else:
+                        cls = "up" if pct > 0 else "down" if pct < 0 else "neutral"
+                        sign = "+" if pct > 0 else ""
+                        html_content += f"<td><span class='date-label'>{d_date}</span><span class='{cls}'>{sign}{pct}%</span></td>"
+
+                html_content += f"""
+                    <td class="break">{r['break_ma10']}</td>
+                    <td class="{tot_cls}">{'+' if r['total_ret'] > 0 else ''}{r['total_ret']}%</td>
+                </tr>
+                """
+
+        html_content += """
+            </tbody>
+            </table>
+        </div>
+        """
+
+    html_content += "</body></html>"
+
+    html_path = "history_20d_by_stage_report.html"
+    with open(html_path, "w", encoding="utf-8") as f:
+        f.write(html_content)
+
+    print(f"\n✨ 已成功產出【三分類獨立彩色報表】：{html_path}")
+    print("👉 請在 VS Code 左側在 [history_20d_by_stage_report.html] 點右鍵選 [Open with Live Server] 查看！")
+
+if __name__ == "__main__":
+    analyze_20d_by_stage()
