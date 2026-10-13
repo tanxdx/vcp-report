@@ -284,7 +284,7 @@ def analyze_and_build_dual_report():
     json_data_str = json.dumps(cleaned_grouped_data, ensure_ascii=False)
 
     html_content = f"""<!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-TW" data-theme="clean">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -292,28 +292,68 @@ def analyze_and_build_dual_report():
 <style>
     * {{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; }}
     
-    :root {{
+    /* 🌟 預設：質感風格 (Clean & Sophisticated) */
+    :root[data-theme="clean"] {{
+        --bg-main: #f4f5f8;
+        --card-bg: #ffffff;
+        --card-border: #e2e8f0;
+        --card-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+        --accent-brand: #3b82f6;
+        --accent-gold: #d97706;
+        --accent-gold-bg: #fef3c7;
+        --text-title: #0f172a;
+        --text-main: #1e293b;
+        --text-muted: #64748b;
+        --border-subtle: #edf2f7;
+        --ctrl-bg: #ffffff;
+        --ctrl-border: #cbd5e1;
+        --ctrl-active-bg: #0f172a;
+        --ctrl-active-text: #ffffff;
+        --table-th-bg: #f8fafc;
+        --table-stripe: #fafbfc;
+        --red-profit: #e11d48;
+        --red-profit-bg: #ffe4e6;
+        --green-loss: #059669;
+        --green-loss-bg: #d1fae5;
+        --badge-blue: #2563eb;
+        --badge-blue-bg: #eff6ff;
+    }}
+
+    /* 🟣 切換：經典深紫金風格 (Dark Purple) */
+    :root[data-theme="dark"] {{
         --bg-main: #0c0618;
         --card-bg: #150a28;
         --card-border: #2e1752;
+        --card-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        --accent-brand: #a855f7;
         --accent-gold: #facc15;
-        --accent-gold-hover: #eab308;
-        --gold-glow: rgba(250, 204, 21, 0.35);
-        --purple-bright: #a855f7;
-        --purple-dark: #261245;
-        --text-white: #fdf8f0;
-        --text-muted: #b8accc;
+        --accent-gold-bg: rgba(250, 204, 21, 0.15);
+        --text-title: #facc15;
+        --text-main: #fdf8f0;
+        --text-muted: #a79bb7;
+        --border-subtle: #23123d;
+        --ctrl-bg: #1e0e38;
+        --ctrl-border: #4a2185;
+        --ctrl-active-bg: #facc15;
+        --ctrl-active-text: #1a0b2e;
+        --table-th-bg: #110722;
+        --table-stripe: #170c2d;
         --red-profit: #f87171;
+        --red-profit-bg: rgba(239, 68, 68, 0.22);
         --green-loss: #34d399;
+        --green-loss-bg: rgba(52, 211, 153, 0.2);
+        --badge-blue: #38bdf8;
+        --badge-blue-bg: rgba(56, 189, 248, 0.2);
     }}
 
     body {{
         font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "PingFang TC", "Microsoft JhengHei", sans-serif;
         background: var(--bg-main);
-        color: var(--text-white);
+        color: var(--text-main);
         margin: 0;
-        padding: 8px 10px;
+        padding: 10px 12px;
         -webkit-font-smoothing: antialiased;
+        transition: background-color 0.25s ease, color 0.25s ease;
     }}
     
     .header-area {{
@@ -324,20 +364,51 @@ def analyze_and_build_dual_report():
         flex-wrap: wrap;
         gap: 6px;
         border-bottom: 1px solid var(--card-border);
-        padding-bottom: 6px;
+        padding-bottom: 7px;
     }}
     h1 {{
         margin: 0;
-        font-size: 18px;
+        font-size: 19px;
         font-weight: 900;
         display: flex;
         align-items: center;
         gap: 6px;
-        color: var(--accent-gold);
+        color: var(--text-title);
         letter-spacing: 0.5px;
-        text-shadow: 0 0 10px var(--gold-glow);
     }}
-    .legend-tag {{ font-size: 11px; color: var(--text-muted); display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }}
+
+    /* 主題切換按鈕群 */
+    .theme-switch-group {{
+        display: flex;
+        align-items: center;
+        gap: 3px;
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: 20px;
+        padding: 2px 3px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }}
+    .theme-btn {{
+        border: none;
+        background: transparent;
+        color: var(--text-muted);
+        font-size: 10.5px;
+        font-weight: 700;
+        padding: 3px 8px;
+        border-radius: 14px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 3px;
+        transition: all 0.2s;
+    }}
+    .theme-btn.active {{
+        background: var(--ctrl-active-bg);
+        color: var(--ctrl-active-text);
+        box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+    }}
+
+    .legend-tag {{ font-size: 11px; color: var(--text-muted); display: flex; gap: 5px; align-items: center; flex-wrap: wrap; margin-top: 2px; }}
 
     .strat-scope-header {{
         display: flex;
@@ -347,30 +418,28 @@ def analyze_and_build_dual_report():
         padding: 0 2px;
     }}
     .strat-scope-title {{
-        font-size: 13px;
+        font-size: 13.5px;
         font-weight: 800;
-        color: var(--accent-gold);
+        color: var(--text-title);
     }}
     .scope-toggle-btn {{
         background: var(--card-bg);
         border: 1px solid var(--card-border);
         color: var(--text-muted);
         font-size: 11px;
-        font-weight: bold;
+        font-weight: 800;
         padding: 3px 9px;
-        border-radius: 5px;
+        border-radius: 6px;
         cursor: pointer;
         transition: all 0.2s;
     }}
     .scope-toggle-btn.active {{
-        background: var(--accent-gold);
-        color: #1a0b2e;
-        border-color: var(--accent-gold);
-        font-weight: 900;
-        box-shadow: 0 0 8px var(--gold-glow);
+        background: var(--ctrl-active-bg);
+        color: var(--ctrl-active-text);
+        border-color: var(--ctrl-active-bg);
     }}
 
-    /* 📱 頂部策略卡片優化：字體放大、自適應流動排版，不再切字 */
+    /* 頂部策略卡片：精緻陰影與清晰字體 */
     .overall-compact {{
         display: flex;
         gap: 8px;
@@ -383,45 +452,45 @@ def analyze_and_build_dual_report():
     .mini-strat-card {{
         background: var(--card-bg);
         border: 1px solid var(--card-border);
-        border-radius: 8px;
-        padding: 7px 9px;
+        border-radius: 9px;
+        padding: 8px 10px;
         flex: 1;
-        min-width: 132px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+        min-width: 134px;
+        box-shadow: var(--card-shadow);
         display: flex;
         flex-direction: column;
         gap: 3px;
     }}
-    .mini-strat-title {{ font-size: 11.5px; font-weight: 800; color: var(--purple-bright); }}
+    .mini-strat-title {{ font-size: 12px; font-weight: 800; color: var(--accent-brand); }}
     .mini-strat-highlight {{ font-size: 12px; color: var(--accent-gold); font-weight: 800; }}
     
     .mini-stat-ret {{
-        font-size: 13px;
+        font-size: 14px;
         font-weight: 900;
         line-height: 1.2;
     }}
     .mini-stat-sub-win {{
-        font-size: 10.5px;
-        color: var(--accent-gold);
+        font-size: 11px;
+        color: var(--text-muted);
         font-weight: 700;
     }}
     
     .mini-strat-quant {{
-        font-size: 10px;
-        color: #e2d9f3;
+        font-size: 10.5px;
+        color: var(--text-muted);
         display: flex;
         justify-content: space-between;
         margin-top: 2px;
     }}
-    .mini-strat-quant b {{ color: var(--accent-gold); font-size: 10.5px; }}
+    .mini-strat-quant b {{ color: var(--text-main); font-size: 11px; }}
 
     .mini-strat-sub {{
-        font-size: 10px;
+        font-size: 10.5px;
         color: var(--text-muted);
         display: flex;
         justify-content: space-between;
-        border-top: 1px solid var(--card-border);
-        padding-top: 3px;
+        border-top: 1px solid var(--border-subtle);
+        padding-top: 4px;
         margin-top: 2px;
     }}
 
@@ -429,13 +498,13 @@ def analyze_and_build_dual_report():
     .controls-wrapper {{
         background: var(--card-bg);
         border: 1px solid var(--card-border);
-        border-radius: 8px;
-        padding: 7px 8px;
+        border-radius: 9px;
+        padding: 8px 9px;
         margin-bottom: 8px;
         display: flex;
         flex-direction: column;
         gap: 7px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+        box-shadow: var(--card-shadow);
     }}
     .ctrl-row {{
         display: flex;
@@ -456,27 +525,27 @@ def analyze_and_build_dual_report():
     }}
 
     .days-select-dropdown {{
-        background: #1e0e38;
-        color: var(--accent-gold);
-        border: 1px solid var(--purple-bright);
+        background: var(--ctrl-bg);
+        color: var(--text-main);
+        border: 1px solid var(--ctrl-border);
         padding: 4px 6px;
-        border-radius: 5px;
+        border-radius: 6px;
         font-size: 12px;
-        font-weight: bold;
+        font-weight: 700;
         outline: none;
         cursor: pointer;
         flex-shrink: 0;
     }}
 
     .days-nav-btn {{
-        background: #1e0e38;
-        border: 1px solid var(--card-border);
-        color: var(--accent-gold);
+        background: var(--ctrl-bg);
+        border: 1px solid var(--ctrl-border);
+        color: var(--text-main);
         font-size: 12px;
         font-weight: 900;
         cursor: pointer;
         padding: 4px 7px;
-        border-radius: 5px;
+        border-radius: 6px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -484,8 +553,7 @@ def analyze_and_build_dual_report():
         flex-shrink: 0;
         transition: all 0.15s;
     }}
-    .days-nav-btn:active {{ background: var(--purple-dark); }}
-    .days-nav-btn:disabled {{ color: #523b73; cursor: not-allowed; }}
+    .days-nav-btn:disabled {{ opacity: 0.35; cursor: not-allowed; }}
 
     .days-scroll-group {{
         display: flex;
@@ -500,11 +568,11 @@ def analyze_and_build_dual_report():
     .days-scroll-group::-webkit-scrollbar {{ display: none; }}
 
     .pill-day-btn {{
-        background: #1e0e38;
-        border: 1px solid var(--card-border);
+        background: var(--ctrl-bg);
+        border: 1px solid var(--ctrl-border);
         color: var(--text-muted);
         padding: 4px 8px;
-        border-radius: 5px;
+        border-radius: 6px;
         cursor: pointer;
         font-size: 11.5px;
         font-weight: 700;
@@ -513,16 +581,11 @@ def analyze_and_build_dual_report():
         min-width: 34px;
         text-align: center;
     }}
-    .pill-day-btn:hover {{
-        border-color: var(--purple-bright);
-        color: var(--text-white);
-    }}
     .pill-day-btn.active-days {{
-        background: var(--accent-gold) !important;
-        border-color: var(--accent-gold) !important;
-        color: #1a0b2e !important;
+        background: var(--ctrl-active-bg) !important;
+        border-color: var(--ctrl-active-bg) !important;
+        color: var(--ctrl-active-text) !important;
         font-weight: 900 !important;
-        box-shadow: 0 0 8px var(--gold-glow);
     }}
 
     .search-box-wrapper {{
@@ -533,22 +596,17 @@ def analyze_and_build_dual_report():
         min-width: 140px;
     }}
     .search-input {{
-        background: #1e0e38;
-        border: 1px solid var(--purple-bright);
-        color: var(--text-white);
+        background: var(--ctrl-bg);
+        border: 1px solid var(--ctrl-border);
+        color: var(--text-main);
         padding: 5px 24px 5px 9px;
         border-radius: 6px;
         font-size: 12px;
         width: 100%;
         outline: none;
-        transition: border 0.2s;
     }}
     .search-input:focus {{
-        border-color: var(--accent-gold);
-        box-shadow: 0 0 6px var(--gold-glow);
-    }}
-    .search-input::placeholder {{
-        color: #8c7aa8;
+        border-color: var(--accent-brand);
     }}
     .search-clear-btn {{
         position: absolute;
@@ -564,8 +622,8 @@ def analyze_and_build_dual_report():
         display: flex;
         align-items: center;
         gap: 2px;
-        background: #1e0e38;
-        border: 1px solid var(--purple-bright);
+        background: var(--ctrl-bg);
+        border: 1px solid var(--ctrl-border);
         border-radius: 6px;
         padding: 2px 3px;
         flex-shrink: 0;
@@ -574,7 +632,7 @@ def analyze_and_build_dual_report():
     .nav-arrow-btn {{
         background: transparent;
         border: none;
-        color: var(--accent-gold);
+        color: var(--text-main);
         font-size: 13px;
         font-weight: bold;
         cursor: pointer;
@@ -585,35 +643,34 @@ def analyze_and_build_dual_report():
         justify-content: center;
         user-select: none;
     }}
-    .nav-arrow-btn:active {{ background: var(--purple-dark); }}
-    .nav-arrow-btn:disabled {{ color: #523b73; cursor: not-allowed; }}
+    .nav-arrow-btn:disabled {{ opacity: 0.35; cursor: not-allowed; }}
 
     .date-select {{
         background: transparent;
-        color: var(--accent-gold);
+        color: var(--text-main);
         border: none;
         padding: 2px 3px;
         font-size: 12px;
-        font-weight: bold;
+        font-weight: 800;
         outline: none;
         cursor: pointer;
     }}
 
     .month-select {{
-        background: #1e0e38;
-        color: var(--accent-gold);
-        border: 1px solid var(--purple-bright);
+        background: var(--ctrl-bg);
+        color: var(--text-main);
+        border: 1px solid var(--ctrl-border);
         padding: 4px 6px;
         border-radius: 6px;
         font-size: 12px;
-        font-weight: bold;
+        font-weight: 800;
         outline: none;
         flex-shrink: 0;
     }}
 
     .pill-btn {{
-        background: #1e0e38;
-        border: 1px solid var(--card-border);
+        background: var(--ctrl-bg);
+        border: 1px solid var(--ctrl-border);
         color: var(--text-muted);
         padding: 4px 10px;
         border-radius: 6px;
@@ -624,13 +681,13 @@ def analyze_and_build_dual_report():
         flex-shrink: 0;
     }}
     .pill-btn.active-grade {{
-        background: var(--purple-bright);
-        color: #fff;
-        border-color: var(--purple-bright);
+        background: var(--ctrl-active-bg);
+        color: var(--ctrl-active-text);
+        border-color: var(--ctrl-active-bg);
     }}
-    .pill-btn.active-a {{ background: #16a34a !important; border-color: #22c55e !important; color: #fff !important; }}
-    .pill-btn.active-b {{ background: #2563eb !important; border-color: #3b82f6 !important; color: #fff !important; }}
-    .pill-btn.active-c {{ background: #d97706 !important; border-color: #f59e0b !important; color: #fff !important; }}
+    .pill-btn.active-a {{ background: #16a34a !important; border-color: #16a34a !important; color: #fff !important; }}
+    .pill-btn.active-b {{ background: #2563eb !important; border-color: #2563eb !important; color: #fff !important; }}
+    .pill-btn.active-c {{ background: #d97706 !important; border-color: #d97706 !important; color: #fff !important; }}
 
     .tabs-wrapper {{
         display: flex;
@@ -651,16 +708,15 @@ def analyze_and_build_dual_report():
         border-radius: 6px;
         cursor: pointer;
         font-size: 11.5px;
-        font-weight: 700;
+        font-weight: 800;
         white-space: nowrap;
         flex-shrink: 0;
         transition: all 0.2s;
     }}
     .tab-pill.active {{
-        background: #2a154d;
-        color: var(--accent-gold);
-        border-color: var(--accent-gold);
-        box-shadow: 0 0 6px var(--gold-glow);
+        background: var(--ctrl-active-bg);
+        color: var(--ctrl-active-text);
+        border-color: var(--ctrl-active-bg);
     }}
     
     .checkbox-control-group {{
@@ -669,7 +725,7 @@ def analyze_and_build_dual_report():
         gap: 8px;
         margin-left: 4px;
         padding: 3px 8px;
-        background: #1a0c33;
+        background: var(--card-bg);
         border: 1px solid var(--card-border);
         border-radius: 6px;
         flex-shrink: 0;
@@ -685,14 +741,11 @@ def analyze_and_build_dual_report():
         white-space: nowrap;
     }}
     .custom-check-label input[type="checkbox"] {{
-        accent-color: var(--accent-gold);
+        accent-color: var(--accent-brand);
         width: 14px;
         height: 14px;
         cursor: pointer;
         margin: 0;
-    }}
-    .custom-check-label:hover {{
-        color: var(--accent-gold);
     }}
     
     .day-stat-strip {{
@@ -700,34 +753,38 @@ def analyze_and_build_dual_report():
         justify-content: space-between;
         align-items: center;
         background: var(--card-bg);
-        border-left: 3px solid var(--accent-gold);
+        border-left: 3.5px solid var(--accent-brand);
         border-radius: 6px;
-        padding: 6px 8px;
+        padding: 6px 9px;
         margin-bottom: 6px;
         font-size: 11.5px;
-        color: #e2d9f3;
+        color: var(--text-main);
         white-space: nowrap;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        box-shadow: var(--card-shadow);
+        border-top: 1px solid var(--card-border);
+        border-right: 1px solid var(--card-border);
+        border-bottom: 1px solid var(--card-border);
     }}
 
     .table-hint-row {{
         display: flex;
         justify-content: space-between;
         align-items: center;
-        font-size: 10px;
+        font-size: 10.5px;
         color: var(--text-muted);
         margin-bottom: 4px;
         padding: 0 2px;
     }}
 
+    /* 表格設計：細緻線條與圓角 */
     .table-wrapper {{
         width: 100%;
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
         background: var(--card-bg);
-        border-radius: 8px;
+        border-radius: 9px;
         border: 1px solid var(--card-border);
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        box-shadow: var(--card-shadow);
         margin-bottom: 15px;
     }}
 
@@ -741,14 +798,14 @@ def analyze_and_build_dual_report():
     th, td {{
         padding: 6px 5px;
         text-align: center;
-        border-bottom: 1px solid #23123d;
-        border-right: 1px solid #23123d;
+        border-bottom: 1px solid var(--border-subtle);
+        border-right: 1px solid var(--border-subtle);
         white-space: nowrap;
     }}
 
     th {{
-        background: #110722;
-        color: var(--accent-gold);
+        background: var(--table-th-bg);
+        color: var(--text-muted);
         font-size: 11px;
         font-weight: 800;
         position: sticky;
@@ -760,12 +817,8 @@ def analyze_and_build_dual_report():
     th.sortable {{
         cursor: pointer;
         user-select: none;
-        background: #2b1352 !important;
-        color: #fef08a !important;
-        transition: background 0.15s;
-    }}
-    th.sortable:hover {{
-        background: #3c1a73 !important;
+        color: var(--text-title) !important;
+        background: var(--table-th-bg) !important;
     }}
 
     .sticky-stock {{
@@ -773,11 +826,11 @@ def analyze_and_build_dual_report():
         left: 0px;
         background: var(--card-bg) !important;
         z-index: 5;
-        min-width: 92px;
-        box-shadow: 2px 0 6px rgba(0,0,0,0.45);
+        min-width: 94px;
+        box-shadow: 3px 0 8px rgba(0,0,0,0.04);
         padding: 6px 4px;
     }}
-    th.sticky-stock {{ background: #110722 !important; z-index: 15; }}
+    th.sticky-stock {{ background: var(--table-th-bg) !important; z-index: 15; }}
 
     .stock-combo {{
         display: flex;
@@ -785,18 +838,17 @@ def analyze_and_build_dual_report():
         align-items: center;
         gap: 2px;
     }}
-    /* 📱 標的代號大幅放大加粗，好辨識 */
-    .stock-id-txt {{ font-size: 14.5px; font-weight: 900; color: var(--text-white); line-height: 1.1; }}
-    .stock-name-txt {{ font-size: 12px; color: var(--accent-gold); line-height: 1.1; font-weight: 700; }}
+    .stock-id-txt {{ font-size: 15px; font-weight: 900; color: var(--text-main); line-height: 1.1; }}
+    .stock-name-txt {{ font-size: 12px; color: var(--accent-brand); line-height: 1.1; font-weight: 800; }}
     
     .date-badge-box {{
-        background: #220e42;
-        color: #e9d5ff;
+        background: var(--ctrl-bg);
+        color: var(--text-muted);
         font-size: 9.5px;
         font-weight: 700;
         padding: 1px 5px;
         border-radius: 4px;
-        border: 1px solid var(--purple-bright);
+        border: 1px solid var(--ctrl-border);
         margin-bottom: 3px;
         cursor: pointer;
         user-select: none;
@@ -808,16 +860,17 @@ def analyze_and_build_dual_report():
         justify-content: center;
         gap: 2px;
         margin-top: 3px;
-        max-width: 88px;
+        max-width: 90px;
     }}
     .bonus-tag {{
         display: inline-block;
-        background: rgba(250, 204, 21, 0.12);
+        background: var(--accent-gold-bg);
         color: var(--accent-gold);
         font-size: 8.5px;
         padding: 1px 3px;
         border-radius: 3px;
-        border: 1px solid rgba(250, 204, 21, 0.3);
+        border: 1px solid rgba(217, 119, 6, 0.25);
+        font-weight: 700;
         line-height: 1.1;
     }}
 
@@ -835,8 +888,9 @@ def analyze_and_build_dual_report():
         gap: 2px;
     }}
     .badge-trigger-ok {{
-        background: #15803d;
-        color: #ffffff;
+        background: var(--badge-blue-bg);
+        color: var(--badge-blue);
+        border: 1px solid rgba(37, 99, 235, 0.2);
         font-size: 9.5px;
         font-weight: 800;
         padding: 1px 4px;
@@ -844,8 +898,8 @@ def analyze_and_build_dual_report():
         line-height: 1.2;
     }}
     .badge-trigger-no {{
-        background: #271442;
-        color: #8c7aa8;
+        background: var(--border-subtle);
+        color: var(--text-muted);
         font-size: 9.5px;
         padding: 1px 4px;
         border-radius: 3px;
@@ -856,110 +910,121 @@ def analyze_and_build_dual_report():
     .badge-grade-a {{ background: #16a34a; }}
     .badge-grade-b {{ background: #2563eb; }}
     .badge-grade-c {{ background: #d97706; }}
-    .badge-tag {{ display: inline-block; padding: 1px 4px; border-radius: 3px; font-size: 9px; background: #261247; color: #c084fc; font-weight: bold; border: 1px solid #4a2185; }}
+    .badge-tag {{ display: inline-block; padding: 1px 4px; border-radius: 3px; font-size: 9px; background: var(--border-subtle); color: var(--text-muted); font-weight: bold; border: 1px solid var(--card-border); }}
 
     .cell-box {{ display: flex; flex-direction: column; gap: 2px; align-items: center; min-width: 56px; }}
-    .date-label {{ font-size: 9px; color: #8c7aa8; }}
-    .close-price {{ font-size: 11.5px; font-weight: 700; color: var(--text-white); }}
+    .date-label {{ font-size: 9.5px; color: var(--text-muted); }}
+    .close-price {{ font-size: 12px; font-weight: 700; color: var(--text-main); }}
     .day-val {{ font-size: 10.5px; font-weight: 800; padding: 0 1px; border-radius: 2px; }}
-    .cum-box {{ font-size: 9.5px; padding: 1px 3px; border-radius: 3px; font-weight: 700; }}
+    .cum-box {{ font-size: 9.5px; padding: 1px 3px; border-radius: 3px; font-weight: 800; }}
     
     .c-red {{ color: var(--red-profit); }}
     .c-green {{ color: var(--green-loss); }}
-    .c-gray {{ color: #72608a; }}
-    .limit-up {{ background: #ffffff !important; color: #dc2626 !important; font-weight: 900 !important; border-radius: 2px; padding: 0 3px !important; }}
-    .bg-red {{ background: rgba(239, 68, 68, 0.22); color: #fca5a5; }}
-    .bg-green {{ background: rgba(52, 211, 153, 0.2); color: #a7f3d0; }}
-    .bg-gray {{ background: #1a0b30; color: #72608a; }}
+    .c-gray {{ color: var(--text-muted); }}
+    .limit-up {{ background: #e11d48 !important; color: #ffffff !important; font-weight: 900 !important; border-radius: 3px; padding: 0 3px !important; }}
+    .bg-red {{ background: var(--red-profit-bg); color: var(--red-profit); }}
+    .bg-green {{ background: var(--green-loss-bg); color: var(--green-loss); }}
+    .bg-gray {{ background: var(--border-subtle); color: var(--text-muted); }}
     
     .badge-entry-day {{
-        background: #0284c7 !important;
-        color: #ffffff !important;
+        background: var(--badge-blue-bg) !important;
+        color: var(--badge-blue) !important;
+        border: 1px solid rgba(37, 99, 235, 0.25);
         font-weight: 800;
         font-size: 9px;
         padding: 1px 4px;
         border-radius: 3px;
     }}
     .badge-tp-10 {{
-        background: var(--accent-gold) !important;
-        color: #1a0b2e !important;
+        background: var(--accent-gold-bg) !important;
+        color: var(--accent-gold) !important;
+        border: 1px solid rgba(217, 119, 6, 0.3);
         font-weight: 900;
         font-size: 9px;
         padding: 1px 4px;
         border-radius: 3px;
-        box-shadow: 0 0 5px var(--gold-glow);
     }}
     .badge-tp-20 {{
-        background: #f43f5e !important;
-        color: #ffffff !important;
+        background: var(--red-profit-bg) !important;
+        color: var(--red-profit) !important;
+        border: 1px solid rgba(225, 29, 72, 0.3);
         font-weight: 900;
         font-size: 9px;
         padding: 1px 4px;
         border-radius: 3px;
-        box-shadow: 0 0 6px rgba(244, 63, 94, 0.7);
     }}
     .badge-stop-15 {{
-        background: #dc2626 !important;
-        color: #ffffff !important;
+        background: #fee2e2 !important;
+        color: #b91c1c !important;
+        border: 1px solid #f87171;
         font-weight: 800;
         font-size: 9px;
         padding: 1px 4px;
         border-radius: 3px;
     }}
     .badge-stop-7 {{
-        background: #ea580c !important;
-        color: #ffffff !important;
+        background: #ffedd5 !important;
+        color: #c2410c !important;
+        border: 1px solid #fb923c;
         font-weight: 800;
         font-size: 9px;
         padding: 1px 4px;
         border-radius: 3px;
     }}
     .badge-share-1 {{
-        background: #251242;
-        color: var(--accent-gold);
+        background: var(--border-subtle);
+        color: var(--text-muted);
         font-size: 8.5px;
-        border: 1px solid var(--accent-gold);
+        border: 1px solid var(--card-border);
         padding: 1px 3px;
         border-radius: 3px;
     }}
 
-    .waiting-box {{ opacity: 0.35; }}
+    .waiting-box {{ opacity: 0.4; }}
     .exited-box {{ opacity: 0.55; }}
     
     .status-highlight {{ font-size: 11px; font-weight: 800; }}
-    .st-holding {{ color: #38bdf8; }}
+    .st-holding {{ color: var(--badge-blue); }}
     .st-tp {{ color: var(--accent-gold); }}
-    .st-winall {{ color: #f43f5e; }}
-    .st-stop {{ color: #ef4444; }}
-    .st-wait {{ color: #72608a; }}
+    .st-winall {{ color: var(--red-profit); }}
+    .st-stop {{ color: #dc2626; }}
+    .st-wait {{ color: var(--text-muted); }}
     
     .ret-highlight {{
         font-weight: 900;
-        font-size: 13px;
-        background: rgba(18, 7, 36, 0.75);
-        min-width: 65px;
+        font-size: 13.5px;
+        background: var(--card-bg);
+        min-width: 66px;
     }}
 
     .max-highlight {{
         font-weight: 900;
-        font-size: 13px;
-        background: rgba(32, 14, 61, 0.85);
-        min-width: 72px;
+        font-size: 13.5px;
+        background: var(--card-bg);
+        min-width: 74px;
     }}
     .max-super {{
         color: var(--accent-gold) !important;
-        text-shadow: 0 0 6px var(--gold-glow);
     }}
     .max-good {{
-        color: #f87171 !important;
+        color: var(--red-profit) !important;
     }}
 </style>
 </head>
 <body>
 
 <div class="header-area">
-    <h1>🚀 趙阿瑋要賺爆了</h1>
-    <div class="legend-tag">
+    <div style="display:flex; align-items:center; gap:8px;">
+        <h1>🚀 趙阿瑋要賺爆了</h1>
+    </div>
+    
+    <!-- 🌟 主題風格切換 -->
+    <div class="theme-switch-group">
+        <button class="theme-btn active" id="btnThemeClean" onclick="setAppTheme('clean')">⚪ 質感風格</button>
+        <button class="theme-btn" id="btnThemeDark" onclick="setAppTheme('dark')">🟣 深紫金</button>
+    </div>
+
+    <div class="legend-tag" style="width:100%;">
         <span><span class="badge-entry-day">🎯進場(2張)</span></span>
         <span><span class="badge-tp-10">💰+10%出1張</span></span>
         <span><span class="badge-tp-20">🎉+20%全出</span></span>
@@ -976,7 +1041,6 @@ def analyze_and_build_dual_report():
     </div>
 </div>
 
-<!-- 📱 緊湊型統計列（自適應排版，字體更清晰不切字） -->
 <div class="overall-compact">
     <div class="mini-strat-card">
         <div class="mini-strat-title">👑 領頭 (LEADERS)</div>
@@ -1093,6 +1157,24 @@ let statScope = 'month';
 
 let showStageCol = false;
 let showStopsCol = false;
+
+// 🌟 主題切換邏輯（預設質感風格）
+function setAppTheme(theme) {{
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('vcp_theme_pref', theme);
+    
+    const btnClean = document.getElementById('btnThemeClean');
+    const btnDark = document.getElementById('btnThemeDark');
+    if (btnClean && btnDark) {{
+        btnClean.classList.toggle('active', theme === 'clean');
+        btnDark.classList.toggle('active', theme === 'dark');
+    }}
+}}
+
+function initTheme() {{
+    const saved = localStorage.getItem('vcp_theme_pref') || 'clean';
+    setAppTheme(saved);
+}}
 
 function initDaysButtons() {{
     const container = document.getElementById('daysBtnContainer');
@@ -1544,7 +1626,7 @@ function applyFilters() {{
     const hitRate = validSampleCount > 0 ? (hit8Count / validSampleCount * 100).toFixed(1) : '0.0';
     const avgRet = validSampleCount > 0 ? (totalRetSum / validSampleCount).toFixed(2) : '0.00';
     const sign = totalRetSum >= 0 ? '+' : '';
-    const retColor = totalRetSum >= 0 ? '#f87171' : '#34d399';
+    const retColor = totalRetSum >= 0 ? 'var(--red-profit)' : 'var(--green-loss)';
 
     if (isGlobalSearch) {{
         document.getElementById('dayInlineStat').innerHTML = `
@@ -1560,7 +1642,7 @@ function applyFilters() {{
     }}
 
     if (totalCount === 0) {{
-        document.getElementById('tableContainer').innerHTML = `<div class="table-wrapper"><table style="width:100%;"><tr><td style="color:#72608a; padding:25px; text-align:center;">${{isGlobalSearch ? `全歷史未找到符合「${{searchQuery}}」的股票紀錄` : '此日期與條件無任何入選股票'}}</td></tr></table></div>`;
+        document.getElementById('tableContainer').innerHTML = `<div class="table-wrapper"><table style="width:100%;"><tr><td style="color:var(--text-muted); padding:30px; text-align:center;">${{isGlobalSearch ? `全歷史未找到符合「${{searchQuery}}」的股票紀錄` : '此日期與條件無任何入選股票'}}</td></tr></table></div>`;
         return;
     }}
 
@@ -1613,7 +1695,7 @@ function applyFilters() {{
             }} else {{
                 maxCls = 'c-green';
             }}
-            maxCellContent = `${{signMax}}${{r._maxRet}}% <span style="font-size:9.5px; font-weight:normal; color:#a79bb7;">(D${{r._maxDay}})</span>`;
+            maxCellContent = `${{signMax}}${{r._maxRet}}% <span style="font-size:9.5px; font-weight:normal; color:var(--text-muted);">(D${{r._maxDay}})</span>`;
         }}
 
         const gradeCls = r.grade === 'A' ? 'badge-grade-a' : (r.grade === 'B' ? 'badge-grade-b' : 'badge-grade-c');
@@ -1635,7 +1717,7 @@ function applyFilters() {{
                 <div class="entry-box">
                     <div style="display:flex; align-items:center; gap:3px;">
                         <span class="badge-trigger-ok">🎯D${{r.entry_day_num}}進場</span>
-                        <b style="color:var(--text-white); font-size:13px;">${{r.entry_price}}</b>
+                        <b style="color:var(--text-main); font-size:13.5px;">${{r.entry_price}}</b>
                     </div>
                 </div>
             `;
@@ -1644,17 +1726,17 @@ function applyFilters() {{
                 <div class="entry-box">
                     <div style="display:flex; align-items:center; gap:2px;">
                         <span class="badge-trigger-no">⏳觀察</span>
-                        <span style="color:#a79bb7; font-size:12px;">${{r.target_pivot !== null ? r.target_pivot : '--'}}</span>
+                        <span style="color:var(--text-muted); font-size:12px;">${{r.target_pivot !== null ? r.target_pivot : '--'}}</span>
                     </div>
-                    <div style="font-size:9px; color:#72608a;">待突破</div>
+                    <div style="font-size:9.5px; color:var(--text-muted);">待突破</div>
                 </div>
             `;
         }}
 
         let slTpHtml = `
             <div style="font-size:9.5px; line-height:1.3; text-align:center;">
-                <span style="color:#f43f5e; font-weight:bold;">+20%:${{r.tp_price_20 || '--'}}</span> | <span style="color:var(--accent-gold); font-weight:bold;">+10%:${{r.tp_price_10 || '--'}}</span><br>
-                <span style="color:#ea580c;">保本:${{r.stop_loss_7 || '--'}}</span> | <span style="color:#dc2626;">-8.5%:${{r.stop_loss_15 || '--'}}</span>
+                <span style="color:var(--red-profit); font-weight:bold;">+20%:${{r.tp_price_20 || '--'}}</span> | <span style="color:var(--accent-gold); font-weight:bold;">+10%:${{r.tp_price_10 || '--'}}</span><br>
+                <span style="color:#ea580c; font-weight:bold;">保本:${{r.stop_loss_7 || '--'}}</span> | <span style="color:#dc2626; font-weight:bold;">-8.5%:${{r.stop_loss_15 || '--'}}</span>
             </div>
         `;
 
@@ -1695,8 +1777,8 @@ function applyFilters() {{
                 html += `<td>
                     <div class="cell-box waiting-box">
                         <span class="date-label">${{dInfo.date}}</span>
-                        <span class="close-price" style="color:#72608a;">${{dInfo.close}}</span>
-                        <span style="font-size:9.5px; color:#72608a;">⏳觀察</span>
+                        <span class="close-price" style="color:var(--text-muted);">${{dInfo.close}}</span>
+                        <span style="font-size:9.5px; color:var(--text-muted);">⏳觀察</span>
                     </div>
                 </td>`;
             }} else {{
@@ -1745,6 +1827,7 @@ function applyFilters() {{
 }}
 
 window.onload = function() {{
+    initTheme();
     initDaysButtons();
     initDatePickers();
 }};
@@ -1758,7 +1841,7 @@ window.onload = function() {{
         f.write(html_content)
 
     print(f"\n✨ 已完整更新報表：{html_path}")
-    print(f"👉 成功全面優化手機端體驗：字體層次放大（標的 14.5px、累積 13px）、戰情卡不再切字、操作熱區舒適度大幅提升！")
+    print(f"👉 成功將介面升級為【頂級投研質感風格（Clean & Sophisticated）】！")
 
 if __name__ == "__main__":
     analyze_and_build_dual_report()
