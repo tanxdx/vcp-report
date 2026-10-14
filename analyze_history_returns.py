@@ -1109,8 +1109,8 @@ def analyze_and_build_dual_report():
 </div>
 
 <div class="tabs-wrapper">
-    <button class="tab-pill active" id="tab-btn-ALL" onclick="switchCategory('ALL')">全部 (<span id="count-ALL">0</span>)</button>
-    <button class="tab-pill" id="tab-btn-LEADERS" onclick="switchCategory('LEADERS')">領頭 (<span id="count-LEADERS">0</span>)</button>
+    <button class="tab-pill" id="tab-btn-ALL" onclick="switchCategory('ALL')">全部 (<span id="count-ALL">0</span>)</button>
+    <button class="tab-pill active" id="tab-btn-LEADERS" onclick="switchCategory('LEADERS')">領頭 (<span id="count-LEADERS">0</span>)</button>
     <button class="tab-pill" id="tab-btn-BREAKOUT" onclick="switchCategory('BREAKOUT')">突破 (<span id="count-BREAKOUT">0</span>)</button>
     <button class="tab-pill" id="tab-btn-READY" onclick="switchCategory('READY')">蓄勢 (<span id="count-READY">0</span>)</button>
     
@@ -1140,9 +1140,9 @@ def analyze_and_build_dual_report():
 
 <script>
 const RAW_DATA = {json_data_str};
-let currentCategory = 'ALL';
+let currentCategory = 'LEADERS';  // 🎯 預設選擇領頭
 let currentGrade = 'ALL';
-let currentDays = 20;
+let currentDays = 10;            // 🎯 預設選擇 10 天
 let searchQuery = '';
 let sortField = 'none';
 let sortDirection = 'none';
@@ -1574,7 +1574,6 @@ function applyFilters() {{
         }}
         
         if (r.has_entered) {{
-            // 🎯 核心改進：若已走滿以目標日為準；若天數未走滿，自動沿用最新已開出的累計數值（如 D3）
             let cumActual = subDays.filter(x => x.cum_pct !== null);
             if (cumActual.length > 0) {{
                 const latestCumObj = cumActual[cumActual.length - 1];
@@ -1846,7 +1845,7 @@ window.onload = function() {{
         f.write(html_content)
 
     print(f"\n✨ 已完整更新報表：{html_path}")
-    print(f"👉 成功修正累積回測邏輯：未滿期標的動態沿用當前最新累積（例如 D3），並與頂部總累積 100% 嚴格吻合！")
+    print(f"👉 預設設定：分頁為【領頭 (LEADERS)】，天數為【10天 (10D)】！")
 
 if __name__ == "__main__":
     analyze_and_build_dual_report()
