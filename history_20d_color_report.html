@@ -7,7 +7,6 @@
 <style>
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     
-    /* 🌟 預設：質感風格 (Clean & Sophisticated) */
     :root[data-theme="clean"] {
         --bg-main: #f4f5f8;
         --card-bg: #ffffff;
@@ -34,7 +33,6 @@
         --badge-blue-bg: #eff6ff;
     }
 
-    /* 🟣 切換：經典深紫金風格 (Dark Purple) */
     :root[data-theme="dark"] {
         --bg-main: #0c0618;
         --card-bg: #150a28;
@@ -92,7 +90,6 @@
         letter-spacing: 0.5px;
     }
 
-    /* 主題切換按鈕群 */
     .theme-switch-group {
         display: flex;
         align-items: center;
@@ -154,7 +151,6 @@
         border-color: var(--ctrl-active-bg);
     }
 
-    /* 頂部策略卡片：精緻陰影與清晰字體 */
     .overall-compact {
         display: flex;
         gap: 8px;
@@ -209,7 +205,6 @@
         margin-top: 2px;
     }
 
-    /* 控制列區塊 */
     .controls-wrapper {
         background: var(--card-bg);
         border: 1px solid var(--card-border);
@@ -491,7 +486,6 @@
         padding: 0 2px;
     }
 
-    /* 表格設計：細緻線條與圓角 */
     .table-wrapper {
         width: 100%;
         overflow-x: auto;
@@ -733,7 +727,6 @@
         <h1>🚀 趙阿瑋要賺爆了</h1>
     </div>
     
-    <!-- 🌟 主題風格切換 -->
     <div class="theme-switch-group">
         <button class="theme-btn active" id="btnThemeClean" onclick="setAppTheme('clean')">⚪ 質感風格</button>
         <button class="theme-btn" id="btnThemeDark" onclick="setAppTheme('dark')">🟣 深紫金</button>
@@ -873,7 +866,6 @@ let statScope = 'month';
 let showStageCol = false;
 let showStopsCol = false;
 
-// 🌟 主題切換邏輯（預設質感風格）
 function setAppTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('vcp_theme_pref', theme);
@@ -1146,15 +1138,27 @@ function updateOverallMetrics() {
         dayList.forEach(r => {
             if (!r.has_entered) return;
 
+            let exactRet = null;
             const targetDayObj = r.daily_list[currentDays - 1];
-            if (targetDayObj && targetDayObj.close !== null) {
+            if (targetDayObj && targetDayObj.cum_pct !== null) {
+                exactRet = targetDayObj.cum_pct;
+            } else {
+                let subDays = r.daily_list.slice(0, currentDays);
+                let cumActual = subDays.filter(x => x.cum_pct !== null);
+                if (cumActual.length > 0) {
+                    const lastState = cumActual[cumActual.length - 1].state;
+                    if (['tp_20', 'stopout_15', 'stopout_7', 'all_exited'].includes(lastState)) {
+                        exactRet = cumActual[cumActual.length - 1].cum_pct;
+                    }
+                }
+            }
+
+            if (exactRet !== null) {
+                stratStats[r.stage].returns.push(exactRet);
+
                 let subDays = r.daily_list.slice(0, currentDays);
                 let actualVals = subDays.map(x => x.cum_pct).filter(v => v !== null);
-
                 if (actualVals.length > 0) {
-                    const finalRet = actualVals[actualVals.length - 1];
-                    stratStats[r.stage].returns.push(finalRet);
-
                     let maxP = Math.max(...actualVals);
                     stratStats[r.stage].maxRetSum += maxP;
                     if (maxP >= 8.0) {
@@ -1297,17 +1301,38 @@ function applyFilters() {
         }
         
         if (r.has_entered) {
-            let cumActual = subDays.filter(x => x.cum_pct !== null);
-            if (cumActual.length > 0) {
-                r._calcRet = cumActual[cumActual.length - 1].cum_pct;
+            // 🎯 核心修正：嚴格依當前天數（currentDays）取值，保證直行欄位與頂部總累積 100% 一致
+            const targetDayObj = r.daily_list[currentDays - 1];
+            let exactRet = null;
+            
+            if (targetDayObj && targetDayObj.cum_pct !== null) {
+                exactRet = targetDayObj.cum_pct;
+            } else {
+                let cumActual = subDays.filter(x => x.cum_pct !== null);
+                if (cumActual.length > 0) {
+                    const lastState = cumActual[cumActual.length - 1].state;
+                    if (['tp_20', 'stopout_15', 'stopout_7', 'all_exited'].includes(lastState)) {
+                        exactRet = cumActual[cumActual.length - 1].cum_pct;
+                    }
+                }
+            }
+
+            if (exactRet !== null) {
+                r._calcRet = exactRet;
                 r._hasData = true;
                 validSampleCount++;
                 if (r._calcRet > 0) winCount++;
                 totalRetSum += r._calcRet;
+            } else {
+                r._calcRet = null;
+                r._hasData = false;
+            }
 
+            let cumActualForMax = subDays.filter(x => x.cum_pct !== null);
+            if (cumActualForMax.length > 0) {
                 let highestVal = -999.0;
                 let highestDay = 1;
-                cumActual.forEach(dItem => {
+                cumActualForMax.forEach(dItem => {
                     if (dItem.cum_pct > highestVal) {
                         highestVal = dItem.cum_pct;
                         highestDay = dItem.day;
@@ -1317,9 +1342,7 @@ function applyFilters() {
                 r._maxDay = highestDay;
                 if (r._maxRet >= 8.0) hit8Count++;
             } else {
-                r._calcRet = null;
                 r._maxRet = null;
-                r._hasData = false;
             }
         } else {
             r._calcRet = null;
@@ -1346,12 +1369,12 @@ function applyFilters() {
     if (isGlobalSearch) {
         document.getElementById('dayInlineStat').innerHTML = `
             <span>🔍 跨全歷史搜尋: 「<b>${searchQuery}</b>」 (共 <b>${totalCount}</b> 筆入選紀錄)</span>
-            <span>已觸發: <b>${validSampleCount}</b> 檔 | 總累積: <b style="color:${retColor};">${validSampleCount > 0 ? (sign + totalRetSum.toFixed(1) + '%') : '--'}</b> (均${avgRet}%)</span>
+            <span>已結算/達期: <b>${validSampleCount}</b> 檔 | 總累積: <b style="color:${retColor};">${validSampleCount > 0 ? (sign + totalRetSum.toFixed(1) + '%') : '--'}</b> (均${avgRet}%)</span>
         `;
     } else {
         const dayTag = maxDaysAvailable > 0 ? ` (D${maxDaysAvailable})` : '';
         document.getElementById('dayInlineStat').innerHTML = `
-            <span>📅 <b>${selectedDate}</b> (<b>${validSampleCount}</b>/${totalCount}檔已觸發)${dayTag}</span>
+            <span>📅 <b>${selectedDate}</b> (<b>${validSampleCount}</b>/${totalCount}檔結算)${dayTag}</span>
             <span>達標: <b style="color:var(--accent-gold);">${hitRate}%</b> | 總累積: <b style="color:${retColor};">${validSampleCount > 0 ? (sign + totalRetSum.toFixed(1) + '%') : '--'}</b></span>
         `;
     }
