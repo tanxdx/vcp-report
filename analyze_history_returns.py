@@ -1423,32 +1423,20 @@ function updateOverallMetrics() {{
         dayList.forEach(r => {{
             if (!r.has_entered) return;
 
-            let exactRet = null;
-            const targetDayObj = r.daily_list[currentDays - 1];
-            if (targetDayObj && targetDayObj.cum_pct !== null) {{
-                exactRet = targetDayObj.cum_pct;
-            }} else {{
-                let subDays = r.daily_list.slice(0, currentDays);
-                let cumActual = subDays.filter(x => x.cum_pct !== null);
-                if (cumActual.length > 0) {{
-                    const lastState = cumActual[cumActual.length - 1].state;
-                    if (['tp_20', 'stopout_15', 'stopout_7', 'all_exited'].includes(lastState)) {{
-                        exactRet = cumActual[cumActual.length - 1].cum_pct;
-                    }}
-                }}
-            }}
+            let subDays = r.daily_list.slice(0, currentDays);
+            let cumActual = subDays.filter(x => x.cum_pct !== null);
 
-            if (exactRet !== null) {{
+            if (cumActual.length > 0) {{
+                const latestCumObj = cumActual[cumActual.length - 1];
+                const exactRet = latestCumObj.cum_pct;
+
                 stratStats[r.stage].returns.push(exactRet);
 
-                let subDays = r.daily_list.slice(0, currentDays);
-                let actualVals = subDays.map(x => x.cum_pct).filter(v => v !== null);
-                if (actualVals.length > 0) {{
-                    let maxP = Math.max(...actualVals);
-                    stratStats[r.stage].maxRetSum += maxP;
-                    if (maxP >= 8.0) {{
-                        stratStats[r.stage].hit8Count++;
-                    }}
+                let actualVals = cumActual.map(x => x.cum_pct);
+                let maxP = Math.max(...actualVals);
+                stratStats[r.stage].maxRetSum += maxP;
+                if (maxP >= 8.0) {{
+                    stratStats[r.stage].hit8Count++;
                 }}
             }}
         }});
@@ -1586,30 +1574,21 @@ function applyFilters() {{
         }}
         
         if (r.has_entered) {{
-            // 🎯 核心修正：嚴格依當前天數（currentDays）取值，保證直行欄位與頂部總累積 100% 一致
-            const targetDayObj = r.daily_list[currentDays - 1];
-            let exactRet = null;
-            
-            if (targetDayObj && targetDayObj.cum_pct !== null) {{
-                exactRet = targetDayObj.cum_pct;
-            }} else {{
-                let cumActual = subDays.filter(x => x.cum_pct !== null);
-                if (cumActual.length > 0) {{
-                    const lastState = cumActual[cumActual.length - 1].state;
-                    if (['tp_20', 'stopout_15', 'stopout_7', 'all_exited'].includes(lastState)) {{
-                        exactRet = cumActual[cumActual.length - 1].cum_pct;
-                    }}
-                }}
-            }}
-
-            if (exactRet !== null) {{
-                r._calcRet = exactRet;
+            // 🎯 核心改進：若已走滿以目標日為準；若天數未走滿，自動沿用最新已開出的累計數值（如 D3）
+            let cumActual = subDays.filter(x => x.cum_pct !== null);
+            if (cumActual.length > 0) {{
+                const latestCumObj = cumActual[cumActual.length - 1];
+                r._calcRet = latestCumObj.cum_pct;
+                r._calcDay = latestCumObj.day;
+                r._isPartial = (latestCumObj.day < currentDays);
                 r._hasData = true;
                 validSampleCount++;
                 if (r._calcRet > 0) winCount++;
                 totalRetSum += r._calcRet;
             }} else {{
                 r._calcRet = null;
+                r._calcDay = null;
+                r._isPartial = false;
                 r._hasData = false;
             }}
 
@@ -1631,6 +1610,8 @@ function applyFilters() {{
             }}
         }} else {{
             r._calcRet = null;
+            r._calcDay = null;
+            r._isPartial = false;
             r._maxRet = null;
             r._hasData = false;
         }}
@@ -1654,12 +1635,12 @@ function applyFilters() {{
     if (isGlobalSearch) {{
         document.getElementById('dayInlineStat').innerHTML = `
             <span>🔍 跨全歷史搜尋: 「<b>${{searchQuery}}</b>」 (共 <b>${{totalCount}}</b> 筆入選紀錄)</span>
-            <span>已結算/達期: <b>${{validSampleCount}}</b> 檔 | 總累積: <b style="color:${{retColor}};">${{validSampleCount > 0 ? (sign + totalRetSum.toFixed(1) + '%') : '--'}}</b> (均${{avgRet}}%)</span>
+            <span>已進場: <b>${{validSampleCount}}</b> 檔 | 總累積: <b style="color:${{retColor}};">${{validSampleCount > 0 ? (sign + totalRetSum.toFixed(1) + '%') : '--'}}</b> (均${{avgRet}}%)</span>
         `;
     }} else {{
         const dayTag = maxDaysAvailable > 0 ? ` (D${{maxDaysAvailable}})` : '';
         document.getElementById('dayInlineStat').innerHTML = `
-            <span>📅 <b>${{selectedDate}}</b> (<b>${{validSampleCount}}</b>/${{totalCount}}檔結算)${{dayTag}}</span>
+            <span>📅 <b>${{selectedDate}}</b> (<b>${{validSampleCount}}</b>/${{totalCount}}檔已進場)${{dayTag}}</span>
             <span>達標: <b style="color:var(--accent-gold);">${{hitRate}}%</b> | 總累積: <b style="color:${{retColor}};">${{validSampleCount > 0 ? (sign + totalRetSum.toFixed(1) + '%') : '--'}}</b></span>
         `;
     }}
@@ -1702,7 +1683,8 @@ function applyFilters() {{
         if (curTotalRet !== null) {{
             totCls = curTotalRet > 0 ? 'c-red' : (curTotalRet < 0 ? 'c-green' : 'c-gray');
             const signRet = curTotalRet > 0 ? '+' : '';
-            retCellContent = `${{signRet}}${{curTotalRet}}%`;
+            const partialTag = r._isPartial ? ` <span style="font-size:9.5px; font-weight:normal; color:var(--text-muted);">(D${{r._calcDay}})</span>` : '';
+            retCellContent = `${{signRet}}${{curTotalRet}}%${{partialTag}}`;
         }}
 
         let maxCellContent = '--';
@@ -1864,7 +1846,7 @@ window.onload = function() {{
         f.write(html_content)
 
     print(f"\n✨ 已完整更新報表：{html_path}")
-    print(f"👉 成功將介面升級為【頂級投研質感風格（Clean & Sophisticated）】！")
+    print(f"👉 成功修正累積回測邏輯：未滿期標的動態沿用當前最新累積（例如 D3），並與頂部總累積 100% 嚴格吻合！")
 
 if __name__ == "__main__":
     analyze_and_build_dual_report()
