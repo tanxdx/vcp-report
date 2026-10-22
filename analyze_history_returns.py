@@ -145,110 +145,16 @@ def analyze_and_build_dual_report():
 
                 target_pivot = pivot_price if pivot_price else select_day_close
 
-                has_entered = False
-                entry_day_num = None
-                entry_price = target_pivot
-
-                held_shares = 0
-                realized_ret_sum = 0.0
-                status_desc = "待突破"
-
-                daily_list = []
-                last_close = target_pivot
-
+                raw_bars = []
                 for d in range(1, HOLDING_DAYS + 1):
                     if df_price is not None and idx != -1 and (idx + d) < len(df_price):
                         curr_row = df_price.loc[idx + d]
                         curr_date = curr_row["date_str"][5:]
-                        curr_close = curr_row["close_price"]
-                        curr_high = curr_row["high_price"]
-
-                        close_val = round(curr_close, 2)
-                        day_pct = None
-                        cum_pct = None
-                        state_tag = "waiting"
-
-                        if not has_entered:
-                            if target_pivot and curr_high >= target_pivot:
-                                has_entered = True
-                                entry_day_num = d
-                                entry_price = target_pivot
-                                held_shares = 2
-                                status_desc = "持有中(2張)"
-
-                                state_tag = "entry_first"
-                                cur_float_pct = round(((curr_close / entry_price) - 1) * 100, 1)
-                                cum_pct = cur_float_pct
-                                day_pct = cur_float_pct
-                                last_close = curr_close
-                            else:
-                                state_tag = "waiting"
-                                day_pct = None
-                                cum_pct = None
-                        else:
-                            day_pct = round(((curr_close / last_close) - 1) * 100, 1)
-                            cur_float_pct = round(((curr_close / entry_price) - 1) * 100, 1)
-
-                            if held_shares == 2:
-                                if curr_close < (entry_price * 0.915):
-                                    held_shares = 0
-                                    realized_ret_sum = cur_float_pct * 2
-                                    state_tag = "stopout_15"
-                                    status_desc = f"D{d} 破停損全出"
-                                elif curr_high >= (entry_price * 1.10):
-                                    held_shares = 1
-                                    realized_ret_sum += 10.0
-                                    state_tag = "tp_10"
-                                    status_desc = f"D{d} 達+10%停利1張"
-                                else:
-                                    state_tag = "holding_2"
-                            elif held_shares == 1:
-                                if curr_close < entry_price:
-                                    held_shares = 0
-                                    realized_ret_sum += max(cur_float_pct, 0.0)
-                                    state_tag = "stopout_7"
-                                    status_desc = f"D{d} 保本出餘單"
-                                elif curr_high >= (entry_price * 1.20):
-                                    held_shares = 0
-                                    realized_ret_sum += 20.0
-                                    state_tag = "tp_20"
-                                    status_desc = f"D{d} 達+20%全停利"
-                                else:
-                                    state_tag = "holding_1"
-                            else:
-                                state_tag = "all_exited"
-
-                            if held_shares == 2:
-                                cum_pct = cur_float_pct
-                            elif held_shares == 1:
-                                cum_pct = round((realized_ret_sum + cur_float_pct) / 2.0, 1)
-                            else:
-                                cum_pct = round(realized_ret_sum / 2.0, 1)
-
-                            last_close = curr_close
-
-                        daily_list.append({
-                            "day": d,
-                            "date": curr_date,
-                            "close": close_val,
-                            "day_pct": day_pct,
-                            "cum_pct": cum_pct,
-                            "state": state_tag,
-                            "shares": held_shares
-                        })
+                        curr_close = round(float(curr_row["close_price"]), 2)
+                        curr_high = round(float(curr_row["high_price"]), 2)
+                        raw_bars.append([curr_date, curr_close, curr_high])
                     else:
-                        daily_list.append({
-                            "day": d,
-                            "date": "--",
-                            "close": None,
-                            "day_pct": None,
-                            "cum_pct": None,
-                            "state": "nodata",
-                            "shares": held_shares
-                        })
-
-                if not has_entered:
-                    status_desc = "尚未觸發"
+                        raw_bars.append(None)
 
                 date_grouped_data[date_str].append({
                     "date_str": date_str,
@@ -259,15 +165,7 @@ def analyze_and_build_dual_report():
                     "bonus": bonus_tags,
                     "pivot": pivot_price,
                     "target_pivot": round(target_pivot, 2) if target_pivot else None,
-                    "has_entered": has_entered,
-                    "entry_day_num": entry_day_num,
-                    "entry_price": round(entry_price, 2) if entry_price else None,
-                    "stop_loss_15": round(entry_price * 0.915, 2) if entry_price else None,
-                    "stop_loss_7": round(entry_price * 1.0, 2) if entry_price else None,
-                    "tp_price_10": round(entry_price * 1.10, 2) if entry_price else None,
-                    "tp_price_20": round(entry_price * 1.20, 2) if entry_price else None,
-                    "daily_list": daily_list,
-                    "break_stop": status_desc
+                    "raw_bars": raw_bars
                 })
 
     cleaned_grouped_data = {}
@@ -405,7 +303,53 @@ def analyze_and_build_dual_report():
         box-shadow: 0 1px 4px rgba(0,0,0,0.12);
     }}
 
-    .legend-tag {{ font-size: 11px; color: var(--text-muted); display: flex; gap: 5px; align-items: center; flex-wrap: wrap; margin-top: 2px; }}
+    /* 🌟 停損停利方案切換列 */
+    .scheme-bar {{
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: 9px;
+        padding: 7px 9px;
+        margin-bottom: 8px;
+        box-shadow: var(--card-shadow);
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }}
+    .scheme-btn-row {{
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        overflow-x: auto;
+        scrollbar-width: none;
+        white-space: nowrap;
+    }}
+    .scheme-btn-row::-webkit-scrollbar {{ display: none; }}
+    .scheme-label {{
+        font-size: 11.5px;
+        font-weight: 900;
+        color: var(--text-title);
+        flex-shrink: 0;
+    }}
+    .scheme-btn {{
+        background: var(--ctrl-bg);
+        border: 1px solid var(--ctrl-border);
+        color: var(--text-muted);
+        padding: 4px 10px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 11.5px;
+        font-weight: 800;
+        transition: all 0.18s;
+        flex-shrink: 0;
+    }}
+    .scheme-btn.active {{
+        background: var(--accent-brand);
+        color: #ffffff;
+        border-color: var(--accent-brand);
+        box-shadow: 0 2px 6px rgba(59, 130, 246, 0.28);
+    }}
+
+    .legend-tag {{ font-size: 11px; color: var(--text-muted); display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }}
 
     .strat-scope-header {{
         display: flex;
@@ -457,7 +401,8 @@ def analyze_and_build_dual_report():
         flex-direction: column;
         gap: 3px;
     }}
-    .mini-strat-title {{ font-size: 12px; font-weight: 800; color: var(--accent-brand); }}
+    .mini-strat-title {{ font-size: 12px; font-weight: 800; color: var(--accent-brand); display: flex; justify-content: space-between; align-items: center; }}
+    .mini-strat-rule-tag {{ font-size: 9.5px; color: var(--text-muted); font-weight: 700; }}
     .mini-strat-highlight {{ font-size: 12px; color: var(--accent-gold); font-weight: 800; }}
     
     .mini-stat-ret {{
@@ -1016,14 +961,18 @@ def analyze_and_build_dual_report():
         <button class="theme-btn active" id="btnThemeClean" onclick="setAppTheme('clean')">⚪ 質感風格</button>
         <button class="theme-btn" id="btnThemeDark" onclick="setAppTheme('dark')">🟣 深紫金</button>
     </div>
+</div>
 
-    <div class="legend-tag" style="width:100%;">
-        <span><span class="badge-entry-day">🎯進場(2張)</span></span>
-        <span><span class="badge-tp-10">💰+10%出1張</span></span>
-        <span><span class="badge-tp-20">🎉+20%全出</span></span>
-        <span><span class="badge-stop-15">🛑破停損全出</span></span>
-        <span><span class="badge-stop-7">🛑保本出餘單</span></span>
+<!-- 🌟 新增：回測最佳化方案切換面板 -->
+<div class="scheme-bar">
+    <div class="scheme-btn-row">
+        <span class="scheme-label">🎯 停損停利方案：</span>
+        <button class="scheme-btn active" id="btnScheme-scheme_a" onclick="selectScheme('scheme_a', true)">🏆 方案A：7天全能王</button>
+        <button class="scheme-btn" id="btnScheme-scheme_b" onclick="selectScheme('scheme_b', true)">💰 方案B：10天獲利王</button>
+        <button class="scheme-btn" id="btnScheme-scheme_c" onclick="selectScheme('scheme_c', true)">⚡ 方案C：三策略專屬最強</button>
+        <button class="scheme-btn" id="btnScheme-scheme_orig" onclick="selectScheme('scheme_orig', true)">📌 原始設定 (-8.5%)</button>
     </div>
+    <div class="legend-tag" id="dynamicLegendBar"></div>
 </div>
 
 <div class="strat-scope-header">
@@ -1036,7 +985,10 @@ def analyze_and_build_dual_report():
 
 <div class="overall-compact">
     <div class="mini-strat-card">
-        <div class="mini-strat-title">👑 領頭 (LEADERS)</div>
+        <div class="mini-strat-title">
+            <span>👑 領頭 (LEADERS)</span>
+            <span class="mini-strat-rule-tag" id="card-leaders-rule"></span>
+        </div>
         <div class="mini-strat-highlight" id="card-leaders-max">最高: --</div>
         <div class="mini-stat-ret" id="card-leaders-ret">--</div>
         <div class="mini-stat-sub-win" id="card-leaders-wr">--</div>
@@ -1046,11 +998,14 @@ def analyze_and_build_dual_report():
         </div>
         <div class="mini-strat-sub">
             <span>達標 <b id="card-leaders-hit">--</b></span>
-            <span>滿期 <span id="card-leaders-cnt">--</span></span>
+            <span>進場 <span id="card-leaders-cnt">--</span></span>
         </div>
     </div>
     <div class="mini-strat-card">
-        <div class="mini-strat-title">🚀 突破 (BREAKOUT)</div>
+        <div class="mini-strat-title">
+            <span>🚀 突破 (BREAKOUT)</span>
+            <span class="mini-strat-rule-tag" id="card-breakout-rule"></span>
+        </div>
         <div class="mini-strat-highlight" id="card-breakout-max">最高: --</div>
         <div class="mini-stat-ret" id="card-breakout-ret">--</div>
         <div class="mini-stat-sub-win" id="card-breakout-wr">--</div>
@@ -1060,11 +1015,14 @@ def analyze_and_build_dual_report():
         </div>
         <div class="mini-strat-sub">
             <span>達標 <b id="card-breakout-hit">--</b></span>
-            <span>滿期 <span id="card-breakout-cnt">--</span></span>
+            <span>進場 <span id="card-breakout-cnt">--</span></span>
         </div>
     </div>
     <div class="mini-strat-card">
-        <div class="mini-strat-title">⏳ 蓄勢 (READY)</div>
+        <div class="mini-strat-title">
+            <span>⏳ 蓄勢 (READY)</span>
+            <span class="mini-strat-rule-tag" id="card-ready-rule"></span>
+        </div>
         <div class="mini-strat-highlight" id="card-ready-max">最高: --</div>
         <div class="mini-stat-ret" id="card-ready-ret">--</div>
         <div class="mini-stat-sub-win" id="card-ready-wr">--</div>
@@ -1074,7 +1032,7 @@ def analyze_and_build_dual_report():
         </div>
         <div class="mini-strat-sub">
             <span>達標 <b id="card-ready-hit">--</b></span>
-            <span>滿期 <span id="card-ready-cnt">--</span></span>
+            <span>進場 <span id="card-ready-cnt">--</span></span>
         </div>
     </div>
 </div>
@@ -1140,9 +1098,55 @@ def analyze_and_build_dual_report():
 
 <script>
 const RAW_DATA = {json_data_str};
-let currentCategory = 'LEADERS';  // 🎯 預設選擇領頭
+
+// 🌟 四種停損停利方案設定庫
+const SCHEMES = {{
+    'scheme_a': {{
+        name: '方案A：7天全能王',
+        defaultDays: 7,
+        autoDayByTab: false,
+        rules: {{
+            'LEADERS':  {{ sl: -5.0, tp1: 15.0, tp2: 30.0, sl2: 2.0, bestD: 7 }},
+            'BREAKOUT': {{ sl: -5.0, tp1: 15.0, tp2: 30.0, sl2: 2.0, bestD: 7 }},
+            'READY':    {{ sl: -5.0, tp1: 15.0, tp2: 30.0, sl2: 2.0, bestD: 7 }}
+        }}
+    }},
+    'scheme_b': {{
+        name: '方案B：10天獲利王',
+        defaultDays: 10,
+        autoDayByTab: false,
+        rules: {{
+            'LEADERS':  {{ sl: -5.0, tp1: 15.0, tp2: 25.0, sl2: 2.0, bestD: 10 }},
+            'BREAKOUT': {{ sl: -5.0, tp1: 15.0, tp2: 25.0, sl2: 2.0, bestD: 10 }},
+            'READY':    {{ sl: -5.0, tp1: 15.0, tp2: 25.0, sl2: 2.0, bestD: 10 }}
+        }}
+    }},
+    'scheme_c': {{
+        name: '方案C：三策略專屬最強',
+        defaultDays: 10,
+        autoDayByTab: true,
+        rules: {{
+            'LEADERS':  {{ sl: -5.0,  tp1: 15.0, tp2: 25.0, sl2: 2.0, bestD: 10 }},
+            'BREAKOUT': {{ sl: -10.0, tp1: 15.0, tp2: 30.0, sl2: 2.0, bestD: 4 }},
+            'READY':    {{ sl: -5.0,  tp1: 10.0, tp2: 30.0, sl2: 2.0, bestD: 22 }}
+        }}
+    }},
+    'scheme_orig': {{
+        name: '原始設定 (-8.5%)',
+        defaultDays: 10,
+        autoDayByTab: false,
+        rules: {{
+            'LEADERS':  {{ sl: -8.5, tp1: 10.0, tp2: 20.0, sl2: 0.0, bestD: 10 }},
+            'BREAKOUT': {{ sl: -8.5, tp1: 10.0, tp2: 20.0, sl2: 0.0, bestD: 10 }},
+            'READY':    {{ sl: -8.5, tp1: 10.0, tp2: 20.0, sl2: 0.0, bestD: 10 }}
+        }}
+    }}
+}};
+
+let currentScheme = 'scheme_a';
+let currentCategory = 'LEADERS';
 let currentGrade = 'ALL';
-let currentDays = 10;            // 🎯 預設選擇 10 天
+let currentDays = 7;
 let searchQuery = '';
 let sortField = 'none';
 let sortDirection = 'none';
@@ -1166,6 +1170,202 @@ function setAppTheme(theme) {{
 function initTheme() {{
     const saved = localStorage.getItem('vcp_theme_pref') || 'clean';
     setAppTheme(saved);
+}}
+
+// 🌟 根據當前方案即時重算所有交易模擬
+function recalculateAllTrades() {{
+    const schemeCfg = SCHEMES[currentScheme] || SCHEMES['scheme_a'];
+
+    Object.keys(RAW_DATA).forEach(d => {{
+        const list = RAW_DATA[d] || [];
+        list.forEach(r => {{
+            const rule = schemeCfg.rules[r.stage] || schemeCfg.rules['LEADERS'];
+            r._rule = rule;
+
+            const slMult = 1.0 + (rule.sl / 100.0);
+            const tp1Mult = 1.0 + (rule.tp1 / 100.0);
+            const tp2Mult = 1.0 + (rule.tp2 / 100.0);
+            const sl2Mult = 1.0 + (rule.sl2 / 100.0);
+
+            const targetPivot = r.target_pivot;
+            let hasEntered = false;
+            let entryDayNum = null;
+            let entryPrice = targetPivot;
+            let heldShares = 0;
+            let realizedRetSum = 0.0;
+            let statusDesc = '待突破';
+            let lastClose = targetPivot;
+            const dailyList = [];
+
+            for (let dayIdx = 0; dayIdx < 30; dayIdx++) {{
+                const dNum = dayIdx + 1;
+                const bar = r.raw_bars[dayIdx];
+
+                if (bar !== null && bar !== undefined) {{
+                    const currDate = bar[0];
+                    const currClose = bar[1];
+                    const currHigh = bar[2];
+
+                    let dayPct = null;
+                    let cumPct = null;
+                    let stateTag = 'waiting';
+
+                    if (!hasEntered) {{
+                        if (targetPivot && currHigh >= targetPivot) {{
+                            hasEntered = true;
+                            entryDayNum = dNum;
+                            entryPrice = targetPivot;
+                            heldShares = 2;
+                            statusDesc = '持有中(2張)';
+                            stateTag = 'entry_first';
+                            const curFloatPct = Math.round(((currClose / entryPrice) - 1.0) * 1000) / 10;
+                            cumPct = curFloatPct;
+                            dayPct = curFloatPct;
+                            lastClose = currClose;
+                        }} else {{
+                            stateTag = 'waiting';
+                        }}
+                    }} else {{
+                        dayPct = Math.round(((currClose / lastClose) - 1.0) * 1000) / 10;
+                        const curFloatPct = Math.round(((currClose / entryPrice) - 1.0) * 1000) / 10;
+
+                        if (heldShares === 2) {{
+                            if (currClose < (entryPrice * slMult)) {{
+                                heldShares = 0;
+                                realizedRetSum = curFloatPct * 2.0;
+                                stateTag = 'stopout_15';
+                                statusDesc = `D${{dNum}} 破${{rule.sl}}%全出`;
+                            }} else if (currHigh >= (entryPrice * tp1Mult)) {{
+                                heldShares = 1;
+                                realizedRetSum += rule.tp1;
+                                stateTag = 'tp_10';
+                                statusDesc = `D${{dNum}} 達+${{rule.tp1}}%停利1張`;
+                            }} else {{
+                                stateTag = 'holding_2';
+                            }}
+                        }} else if (heldShares === 1) {{
+                            if (currClose < (entryPrice * sl2Mult)) {{
+                                heldShares = 0;
+                                realizedRetSum += Math.max(curFloatPct, rule.sl2);
+                                stateTag = 'stopout_7';
+                                statusDesc = rule.sl2 > 0 ? `D${{dNum}} 鎖利+${{rule.sl2}}%出餘單` : `D${{dNum}} 保本出餘單`;
+                            }} else if (currHigh >= (entryPrice * tp2Mult)) {{
+                                heldShares = 0;
+                                realizedRetSum += rule.tp2;
+                                stateTag = 'tp_20';
+                                statusDesc = `D${{dNum}} 達+${{rule.tp2}}%全停利`;
+                            }} else {{
+                                stateTag = 'holding_1';
+                            }}
+                        }} else {{
+                            stateTag = 'all_exited';
+                        }}
+
+                        if (heldShares === 2) {{
+                            cumPct = curFloatPct;
+                        }} else if (heldShares === 1) {{
+                            cumPct = Math.round(((realizedRetSum + curFloatPct) / 2.0) * 10) / 10;
+                        }} else {{
+                            cumPct = Math.round((realizedRetSum / 2.0) * 10) / 10;
+                        }}
+
+                        lastClose = currClose;
+                    }}
+
+                    dailyList.push({{
+                        day: dNum,
+                        date: currDate,
+                        close: currClose,
+                        day_pct: dayPct,
+                        cum_pct: cumPct,
+                        state: stateTag,
+                        shares: heldShares,
+                        status_so_far: hasEntered ? statusDesc : '尚未觸發'
+                    }});
+                }} else {{
+                    dailyList.push({{
+                        day: dNum,
+                        date: '--',
+                        close: null,
+                        day_pct: null,
+                        cum_pct: null,
+                        state: 'nodata',
+                        shares: heldShares,
+                        status_so_far: hasEntered ? statusDesc : '尚未觸發'
+                    }});
+                }}
+            }}
+
+            if (!hasEntered) statusDesc = '尚未觸發';
+
+            r.has_entered = hasEntered;
+            r.entry_day_num = entryDayNum;
+            r.entry_price = entryPrice ? Math.round(entryPrice * 100) / 100 : null;
+            r.stop_loss_init = entryPrice ? Math.round(entryPrice * slMult * 100) / 100 : null;
+            r.stop_loss_lock = entryPrice ? Math.round(entryPrice * sl2Mult * 100) / 100 : null;
+            r.tp_price_1 = entryPrice ? Math.round(entryPrice * tp1Mult * 100) / 100 : null;
+            r.tp_price_2 = entryPrice ? Math.round(entryPrice * tp2Mult * 100) / 100 : null;
+            r.daily_list = dailyList;
+            r.break_stop = statusDesc;
+        }});
+    }});
+}}
+
+function updateLegendDisplay() {{
+    const schemeCfg = SCHEMES[currentScheme] || SCHEMES['scheme_a'];
+    const activeStage = currentCategory === 'ALL' ? 'LEADERS' : currentCategory;
+    const rule = schemeCfg.rules[activeStage] || schemeCfg.rules['LEADERS'];
+    const lockTxt = rule.sl2 > 0 ? `鎖利+${{rule.sl2}}%出餘單` : `保本0%出餘單`;
+
+    let prefixNote = '';
+    if (currentScheme === 'scheme_c') {{
+        const stName = activeStage === 'LEADERS' ? '領頭' : (activeStage === 'BREAKOUT' ? '突破' : '蓄勢');
+        prefixNote = `<span style="font-weight:800; color:var(--accent-brand);">【${{stName}}專屬最佳 ${{{'LEADERS':10,'BREAKOUT':4,'READY':22}}[activeStage]}}D】</span>`;
+    }}
+
+    document.getElementById('dynamicLegendBar').innerHTML = `
+        ${{prefixNote}}
+        <span><span class="badge-entry-day">🎯進場(2張)</span></span>
+        <span><span class="badge-tp-10">💰+${{rule.tp1}}%出1張</span></span>
+        <span><span class="badge-tp-20">🎉+${{rule.tp2}}%全出</span></span>
+        <span><span class="badge-stop-15">🛑破${{rule.sl}}%全出</span></span>
+        <span><span class="badge-stop-7">🔒${{lockTxt}}</span></span>
+    `;
+
+    ['LEADERS', 'BREAKOUT', 'READY'].forEach(st => {{
+        const r = schemeCfg.rules[st];
+        const el = document.getElementById(`card-${{st.toLowerCase()}}-rule`);
+        if (el && r) {{
+            el.innerText = `${{r.sl}}% / +${{r.tp1}}% / +${{r.tp2}}%`;
+        }}
+    }});
+}}
+
+function selectScheme(schemeKey, jumpDays) {{
+    if (!SCHEMES[schemeKey]) schemeKey = 'scheme_a';
+    currentScheme = schemeKey;
+    localStorage.setItem('vcp_scheme_pref', schemeKey);
+
+    document.querySelectorAll('[id^="btnScheme-"]').forEach(btn => btn.classList.remove('active'));
+    const activeBtn = document.getElementById('btnScheme-' + schemeKey);
+    if (activeBtn) activeBtn.classList.add('active');
+
+    recalculateAllTrades();
+
+    if (jumpDays) {{
+        const cfg = SCHEMES[schemeKey];
+        if (cfg.autoDayByTab) {{
+            const st = currentCategory === 'ALL' ? 'LEADERS' : currentCategory;
+            setHoldingDays(cfg.rules[st].bestD);
+            return;
+        }} else {{
+            setHoldingDays(cfg.defaultDays);
+            return;
+        }}
+    }}
+
+    updateLegendDisplay();
+    applyFilters();
 }}
 
 function initDaysButtons() {{
@@ -1356,6 +1556,7 @@ function setHoldingDays(days) {{
     }}
     
     updateDayNavArrows();
+    updateLegendDisplay();
     applyFilters();
 }}
 
@@ -1379,6 +1580,15 @@ function switchCategory(cat) {{
     currentCategory = cat;
     document.querySelectorAll('.tab-pill').forEach(btn => btn.classList.remove('active'));
     document.getElementById('tab-btn-' + cat).classList.add('active');
+
+    // 若處於方案 C（三策略專屬最強），切換分頁時自動跳轉至該分頁最佳持有天數
+    const cfg = SCHEMES[currentScheme];
+    if (cfg && cfg.autoDayByTab && cat !== 'ALL' && cfg.rules[cat]) {{
+        setHoldingDays(cfg.rules[cat].bestD);
+        return;
+    }}
+
+    updateLegendDisplay();
     applyFilters();
 }}
 
@@ -1399,13 +1609,14 @@ function toggleSortField(field) {{
 function updateOverallMetrics() {{
     const selectedMonth = document.getElementById('monthSelector').value;
     const titleEl = document.getElementById('stratScopeTitle');
+    const schemeName = (SCHEMES[currentScheme] || SCHEMES['scheme_a']).name;
     
     if (statScope === 'month') {{
         const mParts = selectedMonth.split('-');
         const monthTxt = mParts.length === 2 ? `${{parseInt(mParts[1])}} 月份` : selectedMonth;
-        titleEl.innerText = `📅 【${{monthTxt}}】各策略累積績效 (${{currentDays}}天期)`;
+        titleEl.innerText = `📅 【${{monthTxt}}】各策略累積績效 (${{currentDays}}天期｜${{schemeName}})`;
     }} else {{
-        titleEl.innerText = `🏆 【全歷史總計】各策略累積績效 (${{currentDays}}天期)`;
+        titleEl.innerText = `🏆 【全歷史總計】各策略累積績效 (${{currentDays}}天期｜${{schemeName}})`;
     }}
 
     const stratStats = {{
@@ -1580,6 +1791,7 @@ function applyFilters() {{
                 r._calcRet = latestCumObj.cum_pct;
                 r._calcDay = latestCumObj.day;
                 r._isPartial = (latestCumObj.day < currentDays);
+                r._curStatus = latestCumObj.status_so_far || r.break_stop;
                 r._hasData = true;
                 validSampleCount++;
                 if (r._calcRet > 0) winCount++;
@@ -1588,6 +1800,7 @@ function applyFilters() {{
                 r._calcRet = null;
                 r._calcDay = null;
                 r._isPartial = false;
+                r._curStatus = '尚未觸發';
                 r._hasData = false;
             }}
 
@@ -1611,6 +1824,7 @@ function applyFilters() {{
             r._calcRet = null;
             r._calcDay = null;
             r._isPartial = false;
+            r._curStatus = '尚未觸發';
             r._maxRet = null;
             r._hasData = false;
         }}
@@ -1676,6 +1890,7 @@ function applyFilters() {{
     filteredList.forEach(r => {{
         const subDays = r.daily_list.slice(0, currentDays);
         const curTotalRet = r._calcRet;
+        const rule = r._rule || {{ sl: -5.0, tp1: 15.0, tp2: 30.0, sl2: 2.0 }};
 
         let retCellContent = '--';
         let totCls = 'c-gray';
@@ -1704,11 +1919,12 @@ function applyFilters() {{
 
         const gradeCls = r.grade === 'A' ? 'badge-grade-a' : (r.grade === 'B' ? 'badge-grade-b' : 'badge-grade-c');
         
+        const dispStatus = r._curStatus || r.break_stop;
         let statusBadgeCls = 'st-wait';
-        if (r.break_stop.includes('達+20%')) statusBadgeCls = 'st-winall';
-        else if (r.break_stop.includes('達+10%')) statusBadgeCls = 'st-tp';
-        else if (r.break_stop.includes('持有中')) statusBadgeCls = 'st-holding';
-        else if (r.break_stop.includes('破')) statusBadgeCls = 'st-stop';
+        if (dispStatus.includes('全停利')) statusBadgeCls = 'st-winall';
+        else if (dispStatus.includes('停利1張')) statusBadgeCls = 'st-tp';
+        else if (dispStatus.includes('持有中')) statusBadgeCls = 'st-holding';
+        else if (dispStatus.includes('破') || dispStatus.includes('出餘單')) statusBadgeCls = 'st-stop';
 
         let bonusHtml = '';
         if (r.bonus && r.bonus.length > 0) {{
@@ -1716,7 +1932,7 @@ function applyFilters() {{
         }}
 
         let entryHtml = '';
-        if (r.has_entered) {{
+        if (r.has_entered && r.entry_day_num <= currentDays) {{
             entryHtml = `
                 <div class="entry-box">
                     <div style="display:flex; align-items:center; gap:3px;">
@@ -1737,10 +1953,11 @@ function applyFilters() {{
             `;
         }}
 
+        const lockLabel = rule.sl2 > 0 ? `+${{rule.sl2}}%鎖利` : '保本';
         let slTpHtml = `
             <div style="font-size:9.5px; line-height:1.3; text-align:center;">
-                <span style="color:var(--red-profit); font-weight:bold;">+20%:${{r.tp_price_20 || '--'}}</span> | <span style="color:var(--accent-gold); font-weight:bold;">+10%:${{r.tp_price_10 || '--'}}</span><br>
-                <span style="color:#ea580c; font-weight:bold;">保本:${{r.stop_loss_7 || '--'}}</span> | <span style="color:#dc2626; font-weight:bold;">-8.5%:${{r.stop_loss_15 || '--'}}</span>
+                <span style="color:var(--red-profit); font-weight:bold;">+${{rule.tp2}}%:${{r.tp_price_2 || '--'}}</span> | <span style="color:var(--accent-gold); font-weight:bold;">+${{rule.tp1}}%:${{r.tp_price_1 || '--'}}</span><br>
+                <span style="color:#ea580c; font-weight:bold;">${{lockLabel}}:${{r.stop_loss_lock || '--'}}</span> | <span style="color:#dc2626; font-weight:bold;">${{rule.sl}}%:${{r.stop_loss_init || '--'}}</span>
             </div>
         `;
 
@@ -1798,13 +2015,14 @@ function applyFilters() {{
                 if (dInfo.state === 'entry_first') {{
                     cellExtraTag = `<span class="badge-entry-day">🎯進場2張</span>`;
                 }} else if (dInfo.state === 'tp_10') {{
-                    cellExtraTag = `<span class="badge-tp-10">💰+10%出1張</span>`;
+                    cellExtraTag = `<span class="badge-tp-10">💰+${{rule.tp1}}%出1張</span>`;
                 }} else if (dInfo.state === 'tp_20') {{
-                    cellExtraTag = `<span class="badge-tp-20">🎉+20%全出</span>`;
+                    cellExtraTag = `<span class="badge-tp-20">🎉+${{rule.tp2}}%全出</span>`;
                 }} else if (dInfo.state === 'stopout_15') {{
-                    cellExtraTag = `<span class="badge-stop-15">🛑破停損全出</span>`;
+                    cellExtraTag = `<span class="badge-stop-15">🛑破${{rule.sl}}%全出</span>`;
                 }} else if (dInfo.state === 'stopout_7') {{
-                    cellExtraTag = `<span class="badge-stop-7">🛑保本出餘單</span>`;
+                    const lockBadgeTxt = rule.sl2 > 0 ? `🔒鎖+${{rule.sl2}}%出餘單` : `🛑保本出餘單`;
+                    cellExtraTag = `<span class="badge-stop-7">${{lockBadgeTxt}}</span>`;
                 }} else if (dInfo.state === 'holding_1') {{
                     cellExtraTag = `<span class="badge-share-1">剩1張</span>`;
                 }} else if (dInfo.state === 'all_exited') {{
@@ -1822,7 +2040,7 @@ function applyFilters() {{
             }}
         }});
 
-        html += `<td class="status-highlight ${{statusBadgeCls}}">${{r.break_stop}}</td>
+        html += `<td class="status-highlight ${{statusBadgeCls}}">${{dispStatus}}</td>
         </tr>`;
     }});
 
@@ -1832,7 +2050,17 @@ function applyFilters() {{
 
 window.onload = function() {{
     initTheme();
+    const savedScheme = localStorage.getItem('vcp_scheme_pref') || 'scheme_a';
+    currentScheme = SCHEMES[savedScheme] ? savedScheme : 'scheme_a';
+    currentDays = SCHEMES[currentScheme].defaultDays;
+
+    document.querySelectorAll('[id^="btnScheme-"]').forEach(btn => btn.classList.remove('active'));
+    const activeSchemeBtn = document.getElementById('btnScheme-' + currentScheme);
+    if (activeSchemeBtn) activeSchemeBtn.classList.add('active');
+
+    recalculateAllTrades();
     initDaysButtons();
+    updateLegendDisplay();
     initDatePickers();
 }};
 </script>
@@ -1845,7 +2073,7 @@ window.onload = function() {{
         f.write(html_content)
 
     print(f"\n✨ 已完整更新報表：{html_path}")
-    print(f"👉 預設設定：分頁為【領頭 (LEADERS)】，天數為【10天 (10D)】！")
+    print(f"👉 成功內建【方案A：7天全能王】、【方案B：10天獲利王】、【方案C：三策略專屬最強】與【原始設定】動態切換按鈕！")
 
 if __name__ == "__main__":
     analyze_and_build_dual_report()
