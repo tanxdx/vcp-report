@@ -811,6 +811,14 @@ def analyze_and_build_dual_report():
         font-weight: 700;
         line-height: 1.1;
     }}
+    /* 🌟 尊榮金框標籤：特別突顯基本面佳/營收亮眼 */
+    .bonus-tag-gold {{
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        color: #b45309;
+        font-weight: 950;
+        border: 1.5px solid #f59e0b;
+        box-shadow: 0 1px 3px rgba(245, 158, 11, 0.3);
+    }}
 
     .stage-grade-combo {{
         display: flex;
@@ -962,7 +970,6 @@ def analyze_and_build_dual_report():
     </div>
 </div>
 
-<!-- 🌟 回測最佳化方案切換面板 -->
 <div class="scheme-bar">
     <div class="scheme-btn-row">
         <span class="scheme-label">🎯 停損停利方案：</span>
@@ -1073,6 +1080,10 @@ def analyze_and_build_dual_report():
     
     <div class="checkbox-control-group">
         <label class="custom-check-label">
+            <input type="checkbox" id="chkOnlyD1" onchange="onCheckboxToggle()">
+            <span>🎯 只看 D1 首日進場</span>
+        </label>
+        <label class="custom-check-label">
             <input type="checkbox" id="chkShowStage" onchange="onCheckboxToggle()">
             <span>分級評分</span>
         </label>
@@ -1152,6 +1163,7 @@ let statScope = 'month';
 
 let showStageCol = false;
 let showStopsCol = false;
+let onlyD1Filter = false;
 
 function setAppTheme(theme) {{
     document.documentElement.setAttribute('data-theme', theme);
@@ -1411,8 +1423,10 @@ function updateDayNavArrows() {{
 function onCheckboxToggle() {{
     const chkStage = document.getElementById('chkShowStage');
     const chkStops = document.getElementById('chkShowStops');
+    const chkOnlyD1 = document.getElementById('chkOnlyD1');
     showStageCol = chkStage ? chkStage.checked : false;
     showStopsCol = chkStops ? chkStops.checked : false;
+    onlyD1Filter = chkOnlyD1 ? chkOnlyD1.checked : false;
     applyFilters();
 }}
 
@@ -1629,6 +1643,7 @@ function updateOverallMetrics() {{
         const dayList = RAW_DATA[d] || [];
         dayList.forEach(r => {{
             if (!r.has_entered) return;
+            if (onlyD1Filter && r.entry_day_num !== 1) return;
 
             let subDays = r.daily_list.slice(0, currentDays);
             let cumActual = subDays.filter(x => x.cum_pct !== null);
@@ -1764,6 +1779,10 @@ function applyFilters() {{
     let filteredList = [...baseListForCounts];
     if (currentCategory !== 'ALL') {{
         filteredList = filteredList.filter(r => r.stage === currentCategory);
+    }}
+
+    if (onlyD1Filter) {{
+        filteredList = filteredList.filter(r => r.has_entered && r.entry_day_num === 1);
     }}
 
     const totalCount = filteredList.length;
@@ -1924,7 +1943,11 @@ function applyFilters() {{
 
         let bonusHtml = '';
         if (r.bonus && r.bonus.length > 0) {{
-            bonusHtml = `<div class="bonus-box">` + r.bonus.map(b => `<span class="bonus-tag">${{b}}</span>`).join('') + `</div>`;
+            bonusHtml = `<div class="bonus-box">` + r.bonus.map(b => {{
+                const isGold = b.includes('基本面') || b.includes('營收');
+                const tagCls = isGold ? 'bonus-tag bonus-tag-gold' : 'bonus-tag';
+                return `<span class="${{tagCls}}">${{b}}</span>`;
+            }}).join('') + `</div>`;
         }}
 
         let entryHtml = '';
@@ -2069,7 +2092,7 @@ window.onload = function() {{
         f.write(html_content)
 
     print(f"\n✨ 已完整更新報表：{html_path}")
-    print("👉 成功內建【方案A：7天全能王】、【方案B：10天獲利王】、【方案C：三策略專屬最強】與【原始設定】動態切換按鈕！")
+    print("👉 成功新增【🎯 只看 D1 首日進場】過濾器與【✨ 基本面/營收尊榮金框標籤】！")
 
 if __name__ == "__main__":
     analyze_and_build_dual_report()
