@@ -303,7 +303,6 @@ def analyze_and_build_dual_report():
         box-shadow: 0 1px 4px rgba(0,0,0,0.12);
     }}
 
-    /* 🌟 停損停利方案切換列 */
     .scheme-bar {{
         background: var(--card-bg);
         border: 1px solid var(--card-border);
@@ -963,7 +962,7 @@ def analyze_and_build_dual_report():
     </div>
 </div>
 
-<!-- 🌟 新增：回測最佳化方案切換面板 -->
+<!-- 🌟 回測最佳化方案切換面板 -->
 <div class="scheme-bar">
     <div class="scheme-btn-row">
         <span class="scheme-label">🎯 停損停利方案：</span>
@@ -1099,7 +1098,6 @@ def analyze_and_build_dual_report():
 <script>
 const RAW_DATA = {json_data_str};
 
-// 🌟 四種停損停利方案設定庫
 const SCHEMES = {{
     'scheme_a': {{
         name: '方案A：7天全能王',
@@ -1172,7 +1170,6 @@ function initTheme() {{
     setAppTheme(saved);
 }}
 
-// 🌟 根據當前方案即時重算所有交易模擬
 function recalculateAllTrades() {{
     const schemeCfg = SCHEMES[currentScheme] || SCHEMES['scheme_a'];
 
@@ -1320,7 +1317,7 @@ function updateLegendDisplay() {{
     let prefixNote = '';
     if (currentScheme === 'scheme_c') {{
         const stName = activeStage === 'LEADERS' ? '領頭' : (activeStage === 'BREAKOUT' ? '突破' : '蓄勢');
-        prefixNote = `<span style="font-weight:800; color:var(--accent-brand);">【${{stName}}專屬最佳 ${{{'LEADERS':10,'BREAKOUT':4,'READY':22}}[activeStage]}}D】</span>`;
+        prefixNote = `<span style="font-weight:800; color:var(--accent-brand);">【${{stName}}專屬最佳 ${{rule.bestD}}D】</span>`;
     }}
 
     document.getElementById('dynamicLegendBar').innerHTML = `
@@ -1581,7 +1578,6 @@ function switchCategory(cat) {{
     document.querySelectorAll('.tab-pill').forEach(btn => btn.classList.remove('active'));
     document.getElementById('tab-btn-' + cat).classList.add('active');
 
-    // 若處於方案 C（三策略專屬最強），切換分頁時自動跳轉至該分頁最佳持有天數
     const cfg = SCHEMES[currentScheme];
     if (cfg && cfg.autoDayByTab && cat !== 'ALL' && cfg.rules[cat]) {{
         setHoldingDays(cfg.rules[cat].bestD);
@@ -2073,7 +2069,7 @@ window.onload = function() {{
         f.write(html_content)
 
     print(f"\n✨ 已完整更新報表：{html_path}")
-    print(f"👉 成功內建【方案A：7天全能王】、【方案B：10天獲利王】、【方案C：三策略專屬最強】與【原始設定】動態切換按鈕！")
+    print("👉 成功內建【方案A：7天全能王】、【方案B：10天獲利王】、【方案C：三策略專屬最強】與【原始設定】動態切換按鈕！")
 
 if __name__ == "__main__":
     analyze_and_build_dual_report()
