@@ -12,7 +12,7 @@ HOLDING_DAYS = 30           # 計算 30 天供動態切換
 price_cache = {}
 
 def get_stock_prices(stock_id: str):
-    """讀取本機現有 Parquet 日 K"""
+    """讀取本機現有 Parquet 日 K（含收盤、最高、最低、成交量）"""
     if stock_id in price_cache:
         return price_cache[stock_id]
         
@@ -28,11 +28,13 @@ def get_stock_prices(stock_id: str):
                 date_col = next((c for c in df.columns if str(c).lower() in ["date", "datetime", "time"]), None)
                 close_col = next((c for c in df.columns if str(c).lower() in ["close", "price"]), None)
                 high_col = next((c for c in df.columns if str(c).lower() in ["high", "max_price"]), None)
+                vol_col = next((c for c in df.columns if str(c).lower() in ["volume", "vol", "trading_volume"]), None)
                 
                 if date_col and close_col:
                     df["date_str"] = pd.to_datetime(df[date_col]).dt.strftime("%Y-%m-%d")
                     df["close_price"] = df[close_col].astype(float)
                     df["high_price"] = df[high_col].astype(float) if high_col else df["close_price"]
+                    df["vol_val"] = df[vol_col].astype(float) if vol_col else 0.0
                     res = df.sort_values("date_str").reset_index(drop=True)
                     price_cache[stock_id] = res
                     return res
@@ -40,6 +42,85 @@ def get_stock_prices(stock_id: str):
                 pass
     price_cache[stock_id] = None
     return None
+
+def detect_downtrend_breakout(df_price, idx, target_pivot):
+    """
+    偵測『突破下降趨勢線』訊號：
+    1. 回溯前 12~40 根日 K，尋找前波最高點 P1 與後續次高點 P2 (P2 < P1) 構成之向下趨勢線
+    2. 確認突破前股價受制於趨勢線下方，且入選當日或突破價正式向上穿越下降趨勢線
+    3. 檢查成交量是否放大 (大於 5 日均量 1.2 倍) 且收盤站穩趨勢線之上 (對應最理想型態)
+    """
+    if df_price is None or idx < 12:
+        return False, False, None
+
+    start_i = max(0, idx - 35)
+    sub = df_price.loc[start_i:idx].reset_index(drop=True)
+    n = len(sub)
+    if n < 12:
+        return False, False, None
+
+    highs = sub["high_price"].tolist()
+    closes = sub["close_price"].tolist()
+    vols = sub["vol_val"].tolist()
+
+    # 1. 尋找前波高點 P1 (排除最後 5 天，確保有足夠時間形成下降趨勢)
+    search_end_p1 = n - 5
+    p1_idx = 0
+    p1_val = highs[0]
+    for i in range(search_end_p1):
+        if highs[i] >= p1_val:
+            p1_val = highs[i]
+            p1_idx = i
+
+    if p1_val <= 0 or (n - 1 - p1_idx) < 5:
+        return False, False, None
+
+    # 2. 尋找連接 P1 的上切線次高點 P2 (形成壓制價格的下降趨勢線)
+    best_slope = None
+    p2_idx = None
+    for k in range(p1_idx + 2, n - 1):
+        if highs[k] < p1_val * 0.995:  # 次高點必須低於前高 (向下傾斜)
+            slope = (highs[k] - p1_val) / float(k - p1_idx)
+            if best_slope is None or slope > best_slope:
+                best_slope = slope
+                p2_idx = k
+
+    if best_slope is None or best_slope >= 0:
+        return False, False, None
+
+    # 3. 計算下降趨勢線延伸至入選日 (n-1) 的壓力位價格
+    tl_today = p1_val + best_slope * float((n - 1) - p1_idx)
+    tl_prev = p1_val + best_slope * float((n - 2) - p1_idx)
+
+    if tl_today <= 0 or tl_today < closes[-1] * 0.82:
+        return False, False, None
+
+    # 確認中間過程有明顯回檔整理 (最低收盤價低於 P1 至少 3%)
+    min_close_between = min(closes[p1_idx:n - 1])
+    if min_close_between > p1_val * 0.97:
+        return False, False, None
+
+    # 確認前幾日確實受制於下降趨勢線附近或下方，且當日(或突破樞紐價時)向上突破趨勢線
+    curr_close = closes[-1]
+    curr_high = highs[-1]
+    check_pivot = target_pivot if target_pivot else curr_close
+
+    broke_today = (curr_close >= tl_today * 0.995) or (curr_high >= tl_today and curr_close >= tl_today * 0.985)
+    broke_on_pivot = (check_pivot >= tl_today * 0.995) and ( curr_close >= tl_today * 0.96 )
+    was_below_recently = (closes[-2] <= tl_prev * 1.015) or (min(closes[max(p1_idx, n - 5):n - 1]) < tl_today)
+
+    is_trend_break = bool((broke_today or broke_on_pivot) and was_below_recently)
+    if not is_trend_break:
+        return False, False, None
+
+    # 4. 檢查是否為「帶量站穩」最理想型態 (量增 >= 5日均量1.2倍 且 收盤站上趨勢線)
+    prior_vols = [v for v in vols[max(0, n - 6):n - 1] if v > 0]
+    avg_vol_5 = (sum(prior_vols) / len(prior_vols)) if prior_vols else 0.0
+    vol_expanded = (vols[-1] >= avg_vol_5 * 1.2) if avg_vol_5 > 0 else True
+    held_above = curr_close >= tl_today
+
+    is_ideal_break = bool(is_trend_break and vol_expanded and held_above)
+    return is_trend_break, is_ideal_break, round(tl_today, 2)
 
 def analyze_and_build_dual_report():
     json_files = sorted(glob.glob(str(DOCS_HISTORY_DIR / "*.json")))
@@ -145,6 +226,9 @@ def analyze_and_build_dual_report():
 
                 target_pivot = pivot_price if pivot_price else select_day_close
 
+                # 偵測「突破下降趨勢線」訊號
+                trend_break, trend_ideal, tl_price = detect_downtrend_breakout(df_price, idx, target_pivot)
+
                 raw_bars = []
                 for d in range(1, HOLDING_DAYS + 1):
                     if df_price is not None and idx != -1 and (idx + d) < len(df_price):
@@ -163,6 +247,9 @@ def analyze_and_build_dual_report():
                     "stage": stage,
                     "grade": grade,
                     "bonus": bonus_tags,
+                    "trend_break": trend_break,
+                    "trend_ideal": trend_ideal,
+                    "tl_price": tl_price,
                     "pivot": pivot_price,
                     "target_pivot": round(target_pivot, 2) if target_pivot else None,
                     "raw_bars": raw_bars
@@ -798,7 +885,7 @@ def analyze_and_build_dual_report():
         justify-content: center;
         gap: 2px;
         margin-top: 3px;
-        max-width: 90px;
+        max-width: 94px;
     }}
     .bonus-tag {{
         display: inline-block;
@@ -811,13 +898,36 @@ def analyze_and_build_dual_report():
         font-weight: 700;
         line-height: 1.1;
     }}
-    /* 🌟 尊榮金框標籤：特別突顯基本面佳/營收亮眼 */
     .bonus-tag-gold {{
         background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
         color: #b45309;
         font-weight: 950;
         border: 1.5px solid #f59e0b;
         box-shadow: 0 1px 3px rgba(245, 158, 11, 0.3);
+    }}
+    /* 📈 突破下降趨勢專屬標籤 */
+    .bonus-tag-trend {{
+        display: inline-block;
+        background: #e0f2fe;
+        color: #0369a1;
+        font-size: 8.5px;
+        padding: 1px 3px;
+        border-radius: 3px;
+        border: 1px solid #7dd3fc;
+        font-weight: 800;
+        line-height: 1.1;
+    }}
+    .bonus-tag-trend-ideal {{
+        display: inline-block;
+        background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+        color: #047857;
+        font-size: 8.5px;
+        padding: 1px 3.5px;
+        border-radius: 3px;
+        border: 1.2px solid #10b981;
+        font-weight: 900;
+        line-height: 1.1;
+        box-shadow: 0 1px 3px rgba(16, 185, 129, 0.25);
     }}
 
     .stage-grade-combo {{
@@ -1079,6 +1189,10 @@ def analyze_and_build_dual_report():
     <button class="tab-pill" id="tab-btn-READY" onclick="switchCategory('READY')">蓄勢 (<span id="count-READY">0</span>)</button>
     
     <div class="checkbox-control-group">
+        <label class="custom-check-label" title="過濾連接前波高點形成下降趨勢線，並向上突破轉強的個股">
+            <input type="checkbox" id="chkTrendBreak" onchange="onCheckboxToggle()">
+            <span style="color:var(--accent-brand); font-weight:800;">📈 突破下降趨勢</span>
+        </label>
         <label class="custom-check-label">
             <input type="checkbox" id="chkOnlyD1" onchange="onCheckboxToggle()">
             <span>🎯 只看 D1 首日進場</span>
@@ -1164,6 +1278,7 @@ let statScope = 'month';
 let showStageCol = false;
 let showStopsCol = false;
 let onlyD1Filter = false;
+let onlyTrendBreakFilter = false;
 
 function setAppTheme(theme) {{
     document.documentElement.setAttribute('data-theme', theme);
@@ -1339,6 +1454,7 @@ function updateLegendDisplay() {{
         <span><span class="badge-tp-20">🎉+${{rule.tp2}}%全出</span></span>
         <span><span class="badge-stop-15">🛑破${{rule.sl}}%全出</span></span>
         <span><span class="badge-stop-7">🔒${{lockTxt}}</span></span>
+        <span><span class="bonus-tag-trend-ideal">📈帶量破趨勢(理想)</span></span>
     `;
 
     ['LEADERS', 'BREAKOUT', 'READY'].forEach(st => {{
@@ -1424,9 +1540,11 @@ function onCheckboxToggle() {{
     const chkStage = document.getElementById('chkShowStage');
     const chkStops = document.getElementById('chkShowStops');
     const chkOnlyD1 = document.getElementById('chkOnlyD1');
+    const chkTrendBreak = document.getElementById('chkTrendBreak');
     showStageCol = chkStage ? chkStage.checked : false;
     showStopsCol = chkStops ? chkStops.checked : false;
     onlyD1Filter = chkOnlyD1 ? chkOnlyD1.checked : false;
+    onlyTrendBreakFilter = chkTrendBreak ? chkTrendBreak.checked : false;
     applyFilters();
 }}
 
@@ -1620,13 +1738,14 @@ function updateOverallMetrics() {{
     const selectedMonth = document.getElementById('monthSelector').value;
     const titleEl = document.getElementById('stratScopeTitle');
     const schemeName = (SCHEMES[currentScheme] || SCHEMES['scheme_a']).name;
+    const filterSuffix = onlyTrendBreakFilter ? '｜📈突破下降趨勢' : '';
     
     if (statScope === 'month') {{
         const mParts = selectedMonth.split('-');
         const monthTxt = mParts.length === 2 ? `${{parseInt(mParts[1])}} 月份` : selectedMonth;
-        titleEl.innerText = `📅 【${{monthTxt}}】各策略累積績效 (${{currentDays}}天期｜${{schemeName}})`;
+        titleEl.innerText = `📅 【${{monthTxt}}】各策略累積績效 (${{currentDays}}天期｜${{schemeName}}${{filterSuffix}})`;
     }} else {{
-        titleEl.innerText = `🏆 【全歷史總計】各策略累積績效 (${{currentDays}}天期｜${{schemeName}})`;
+        titleEl.innerText = `🏆 【全歷史總計】各策略累積績效 (${{currentDays}}天期｜${{schemeName}}${{filterSuffix}})`;
     }}
 
     const stratStats = {{
@@ -1644,6 +1763,7 @@ function updateOverallMetrics() {{
         dayList.forEach(r => {{
             if (!r.has_entered) return;
             if (onlyD1Filter && r.entry_day_num !== 1) return;
+            if (onlyTrendBreakFilter && !r.trend_break) return;
 
             let subDays = r.daily_list.slice(0, currentDays);
             let cumActual = subDays.filter(x => x.cum_pct !== null);
@@ -1762,9 +1882,16 @@ function applyFilters() {{
         sourceRecords = RAW_DATA[selectedDate] || [];
     }}
 
-    const baseListForCounts = currentGrade === 'ALL' 
+    let baseListForCounts = currentGrade === 'ALL' 
         ? sourceRecords 
         : sourceRecords.filter(r => r.grade === currentGrade);
+
+    if (onlyTrendBreakFilter) {{
+        baseListForCounts = baseListForCounts.filter(r => r.trend_break);
+    }}
+    if (onlyD1Filter) {{
+        baseListForCounts = baseListForCounts.filter(r => r.has_entered && r.entry_day_num === 1);
+    }}
 
     const counts = {{ 'ALL': baseListForCounts.length, 'BREAKOUT': 0, 'READY': 0, 'LEADERS': 0 }};
     baseListForCounts.forEach(r => {{
@@ -1779,10 +1906,6 @@ function applyFilters() {{
     let filteredList = [...baseListForCounts];
     if (currentCategory !== 'ALL') {{
         filteredList = filteredList.filter(r => r.stage === currentCategory);
-    }}
-
-    if (onlyD1Filter) {{
-        filteredList = filteredList.filter(r => r.has_entered && r.entry_day_num === 1);
     }}
 
     const totalCount = filteredList.length;
@@ -1874,7 +1997,7 @@ function applyFilters() {{
     }}
 
     if (totalCount === 0) {{
-        document.getElementById('tableContainer').innerHTML = `<div class="table-wrapper"><table style="width:100%;"><tr><td style="color:var(--text-muted); padding:30px; text-align:center;">${{isGlobalSearch ? `全歷史未找到符合「${{searchQuery}}」的股票紀錄` : '此日期與條件無任何入選股票'}}</td></tr></table></div>`;
+        document.getElementById('tableContainer').innerHTML = `<div class="table-wrapper"><table style="width:100%;"><tr><td style="color:var(--text-muted); padding:30px; text-align:center;">${{isGlobalSearch ? `全歷史未找到符合「${{searchQuery}}」的股票紀錄` : '此日期與過濾條件下無符合的入選股票'}}</td></tr></table></div>`;
         return;
     }}
 
@@ -1941,14 +2064,20 @@ function applyFilters() {{
         else if (dispStatus.includes('持有中')) statusBadgeCls = 'st-holding';
         else if (dispStatus.includes('破') || dispStatus.includes('出餘單')) statusBadgeCls = 'st-stop';
 
-        let bonusHtml = '';
+        let tagElements = [];
+        if (r.trend_ideal) {{
+            tagElements.push(`<span class="bonus-tag-trend-ideal" title="帶量突破下降趨勢線(${{r.tl_price || ''}})且站穩支撐">📈帶量破趨勢</span>`);
+        }} else if (r.trend_break) {{
+            tagElements.push(`<span class="bonus-tag-trend" title="突破下降趨勢線(${{r.tl_price || ''}})">📈破下降趨勢</span>`);
+        }}
         if (r.bonus && r.bonus.length > 0) {{
-            bonusHtml = `<div class="bonus-box">` + r.bonus.map(b => {{
+            r.bonus.forEach(b => {{
                 const isGold = b.includes('基本面') || b.includes('營收');
                 const tagCls = isGold ? 'bonus-tag bonus-tag-gold' : 'bonus-tag';
-                return `<span class="${{tagCls}}">${{b}}</span>`;
-            }}).join('') + `</div>`;
+                tagElements.push(`<span class="${{tagCls}}">${{b}}</span>`);
+            }});
         }}
+        let bonusHtml = tagElements.length > 0 ? `<div class="bonus-box">${{tagElements.join('')}}</div>` : '';
 
         let entryHtml = '';
         if (r.has_entered && r.entry_day_num <= currentDays) {{
@@ -2092,7 +2221,7 @@ window.onload = function() {{
         f.write(html_content)
 
     print(f"\n✨ 已完整更新報表：{html_path}")
-    print("👉 成功新增【🎯 只看 D1 首日進場】過濾器與【✨ 基本面/營收尊榮金框標籤】！")
+    print("👉 成功新增【📈 突破下降趨勢】選股過濾器與【📈帶量破趨勢】標籤！")
 
 if __name__ == "__main__":
     analyze_and_build_dual_report()
