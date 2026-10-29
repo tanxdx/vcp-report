@@ -960,7 +960,7 @@ def analyze_and_build_dual_report():
 
 <div class="header-area">
     <div style="display:flex; align-items:center; gap:8px;">
-        <h1>🚀 趙阿瑋要賺爆了</h1>
+        <h1>🚀 奇鋐我大哥 </h1>
     </div>
     
     <div class="theme-switch-group">
